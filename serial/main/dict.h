@@ -1,7 +1,7 @@
 #ifndef DICT_H_ 
 #define DICT_H_ 
 
-#define CAPACITY 1000
+#define CAPACITY 10000
 
 typedef struct {
     char* key;
@@ -14,10 +14,10 @@ typedef struct {
     int count;
 } dict;
 
-dict_item* create_item(char* key, int value);
 dict* create_dict(int size);
 
+int is_dict_full(dict* d);
 void store(dict* d, char* key, int value);
-int query(dict* d, char* key);
+int* query(dict* d, char* key);
 
 #endif

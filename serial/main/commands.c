@@ -24,6 +24,7 @@
 // command String this should match the
 // index for vars
 
+// Non local variables
 char error[MSG_BUFFER_LENGTH] = "no command history";
 char mac_addr[18] = { 0 };
 char version[6] = { 0 };
@@ -101,6 +102,7 @@ char* command_id() {
 
 /**
  * Returns the firmware version of the device
+ * defined in version.h
  * 
  * @return the firmware version of the device 
  */
@@ -117,16 +119,88 @@ char* command_version() {
     return version;
 }
 
+/**
+ * Stores a signed 32-bit integer onto the device dictionary
+ * 
+ * @param num_args  number of delimiter split inputs
+ * @param vars      the query variables provided to the device
+ * @param d         the dictionary currently in use by the device,
+ *                  this is initialized in the main function
+ *                  in serial.c
+ * 
+ * @return the previously stored variable if there was one
+ *         if there wasn't one returns "undefined" 
+ */
 char* command_store(int num_args, char** vars, dict* d) {
-    int var = atoi(vars[2]);
-    store(d, vars[1], var);
+    char* res;
 
-    return "undefined";
+    if (num_args > 2) {
+        if (strcmp(vars[2], "0") == 0) {
+            int var = 0;
+            int* stored = query(d, vars[1]);
+
+            if (stored) {
+                res = int_to_string(*stored);
+            } else {
+                res = "undefined";
+            }
+
+            store(d, vars[1], var);
+            set_error("success", "");
+            return res;
+        } else {
+            int var = parse_int(vars[2]);
+            if(var != 0) {
+                int* stored = query(d, vars[1]);
+
+                if (stored) {
+                    res = int_to_string(*stored);
+                } else {
+                    res = "undefined";
+                }
+
+                store(d, vars[1], var);
+                set_error("success", "");
+                return res;
+            }
+
+            // If argument was parsed to 0 after explicit check
+            // Then it is either NaN or an empty string
+            // Either way let it drop to argument error below
+        }
+    }
+
+    // Insufficient arguments given
+    res = "argument error";
+    set_error("argument error", "store");
+    return res;
 }
 
+/**
+ * Fetches a signed 32-bit integer from the device dictionary
+ * 
+ * @param num_args  number of delimiter split inputs
+ * @param vars      the query variables provided to the device
+ * @param d         the dictionary currently in use by the device,
+ *                  this is initialized in the main function
+ *                  in serial.c
+ * 
+ * @return the stored variable at the given name if there is one 
+ *         if there isn't one returns "undefined" 
+ */
 char* command_query(int num_args, char** vars, dict* d) {
-    int stored = query(d, vars[1]);
-    char* res = int_to_string(stored);
+    int *stored;
+    char* res;
+
+    stored = query(d, vars[1]);
+
+    if (stored) {
+        res = int_to_string(*stored);
+        set_error("success","");
+    } else {
+        res = "undefined";
+        set_error("undefined", "query");
+    }
 
     return res;
 }
@@ -143,17 +217,14 @@ char* command_query(int num_args, char** vars, dict* d) {
  * @return "done" if the push succeeds, an error state otherwise 
  */
 char* command_push(int num_args, char** vars, stack *pt) {
-    if (num_args != 2) {
+    if (num_args < 2) {
         set_error("argument error", "push");
         return "argument error";
-    } else if (isFull(pt)) {
+    } else if (is_stack_full(pt)) {
         set_error("overflow", "push");
         return "overflow";
     }
 
-    // Failed atoi parsing will return 0
-    // Need to check previously if number
-    // was actually 0
     if (strcmp(vars[1], "0") == 0) {
         push(pt, 0);
         set_error("success","");
@@ -161,7 +232,7 @@ char* command_push(int num_args, char** vars, stack *pt) {
     }
 
     // If we get 0 here then value is NaN
-    int res = atoi(vars[1]);
+    int res = parse_int(vars[1]);
     if (res != 0) {
         push(pt, res);
         set_error("success","");
@@ -194,32 +265,27 @@ char* command_add(int num_args, char** vars, stack *pt) {
         return "undefined";
     } 
 
-    if (num_args > 3) {
-        set_error("argument error", "add");
-        return "argument error";
-    } 
-
     int var1 = 0;
     int var2 = 0;
 
     if (strcmp(vars[1], "0") != 0) {
-        var1 = atoi(vars[1]);
+        var1 = parse_int(vars[1]);
         if (var1 == 0) {
             set_error("argument error", "add");
             return "argument error";
         }
     }
 
-    if (num_args == 3) {
+    if (num_args > 2) {
         if (strcmp(vars[2], "0") != 0) {
-            var2 = atoi(vars[2]);
+            var2 = parse_int(vars[2]);
             if (var2 == 0) {
                 set_error("argument error", "add");
                 return "argument error";
             }
         }
     } else {
-        if (!isEmpty(pt)) {
+        if (!is_stack_empty(pt)) {
             var2 = peek(pt);
         } else {
             set_error("undefined", "add");
@@ -245,11 +311,8 @@ char* command_add(int num_args, char** vars, stack *pt) {
  * 
  * @return the value if the pop succeeds, an error state otherwise
  */
-char* command_pop(int num_args, stack *pt) {
-    if (num_args != 1) {
-        set_error("argument error", "pop");
-        return "argument error";
-    } else if (isEmpty(pt)) {
+char* command_pop(stack *pt) {
+    if (is_stack_empty(pt)) {
         set_error("undefined", "pop");
         return "undefined";
     } 

@@ -16,7 +16,7 @@ struct stack {
  * @param capacity how many values should the stack be able to hold
  * @return a pointer to the newly made stack struct
  */
-stack* newStack(int capacity) {
+stack* create_stack(int capacity) {
     stack *pt = (stack*)malloc(sizeof(struct stack));
     pt->maxsize = capacity;
     pt->top = -1;
@@ -31,7 +31,7 @@ stack* newStack(int capacity) {
  * @param pt pointer to the stack to check
  * @return the quantity of values in the stack
  */ 
-int size(stack *pt) {
+int stack_size(stack *pt) {
     return pt->top + 1;
 }
  
@@ -41,7 +41,7 @@ int size(stack *pt) {
  * @param pt pointer to the stack to check 
  * @return a boolean which indicates if the stack is empty
  */ 
-int isEmpty(stack *pt) {
+int is_stack_empty(stack *pt) {
     return pt->top == -1;
 }
 
@@ -51,7 +51,7 @@ int isEmpty(stack *pt) {
  * @param pt pointer to the stack to check
  * @return a boolean which indicates if the stack is full 
  */ 
-int isFull(stack *pt) {
+int is_stack_full(stack *pt) {
     return pt->top == pt->maxsize - 1;
 }
 
@@ -64,7 +64,7 @@ int isFull(stack *pt) {
  * @param pt pointer to the stack to push to
  */ 
 void push(stack *pt, int x) {
-    if (isFull(pt)) {
+    if (is_stack_full(pt)) {
         exit(EXIT_FAILURE);
     }
 
@@ -80,7 +80,7 @@ void push(stack *pt, int x) {
  * @param pt pointer to the stack to peek in 
  */ 
 int peek(stack *pt) {
-    if (!isEmpty(pt)) {
+    if (!is_stack_empty(pt)) {
         return pt->items[pt->top];
     }
     else {
@@ -90,13 +90,12 @@ int peek(stack *pt) {
 
 /**
  * Pops the first value on the stack and returns it
- * 
  * If the stack is empty it will exit with a non 0 condition
  * 
  * @param pt pointer to the stack to pop
  */ 
 int pop(stack *pt) {
-    if (isEmpty(pt)) {
+    if (is_stack_empty(pt)) {
         exit(EXIT_FAILURE);
     }
  

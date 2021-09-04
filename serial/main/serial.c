@@ -10,7 +10,6 @@
 #include "commands.h"
 
 #define MSG_BUFFER_LENGTH 256
-#define STACK_SIZE 32
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 
@@ -72,15 +71,17 @@ void respond(char* q, stack *pt, dict* d) {
 		} else if (strcmp(COMMAND, "PUSH") == 0) {
 			serial_out(command_push(i, split, pt));
 		} else if (strcmp(COMMAND, "POP") == 0) {
-			serial_out(command_pop(i, pt));
+			serial_out(command_pop(pt));
 		} else if (strcmp(COMMAND, "ADD") == 0) {
 			serial_out(command_add(i, split, pt));
 		} else {
 			// Default case, command does not exist
+			set_error("command error", "");
 			serial_out("command error");
 		}
 	} else {
 		// No command input
+		set_error("command error", "");
 		serial_out("command error");
 	} 
 
@@ -99,7 +100,16 @@ void app_main(void)
 	serial_out("firmware ready");
 
 	char query[MSG_BUFFER_LENGTH];
-	stack *pt = newStack(STACK_SIZE);
+
+	// Note: DO NOT CHANGE THESE CAPACITY
+	// AND SIZE VARIABLES HERE
+	//
+	// For stack capacity can be changed in
+	// stack.h
+	//
+	// For dict capacity can be changed in
+	// dict.h
+	stack *pt = create_stack(STACK_SIZE);
 	dict* d = create_dict(CAPACITY); 
 
 	while (true) {

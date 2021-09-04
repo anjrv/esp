@@ -1,6 +1,8 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 
 #include "utils.h"
 
@@ -8,6 +10,28 @@
 
 // These are assorted helper functions
 // for use elsewhere in the project
+
+char buffer[11];
+
+/**
+ * Converts a char* to an integer and returns its value
+ * FAILURE: If an empty string is given or the value is
+ *          not a number, the function returns 0
+ * 
+ * @param str The string to be converted to an integer 
+ * @return a parsed integer if conversion was possible,
+ *         0 if conversion was not possible 
+ */
+int parse_int(char* str) {
+    char *endptr;
+    long x = strtol(str, &endptr, 10);
+    if (x >= INT_MIN && x <= INT_MAX && endptr > str) {
+        int res = x;
+        return res;
+    }
+
+    return 0;
+}
 
 /**
  * Converts an int to a char* representation
@@ -19,26 +43,8 @@
  *          of x 
  */
 char* int_to_string(int x) {
-    int digit = log10(x) + 1;
-
-    char* arr;
-    char arr1[digit];
-    arr = (char*)malloc(digit);
- 
-    int index = 0;
-    while (x) {
-        arr1[++index] = x % 10 + '0';
-        x /= 10;
-    }
- 
-    int i;
-    for (i = 0; i < index; i++) {
-        arr[i] = arr1[index - i];
-    }
- 
-    arr[i] = '\0';
- 
-    return (char*)arr;
+    snprintf(buffer, 10, "%d", x);
+    return buffer;
 }
 
 /**
@@ -47,7 +53,7 @@ char* int_to_string(int x) {
  * 
  * @param   query the char* to be split
  * @param   delim the delimiters to be used when splitting
- * @return  char** referring to the start of the split char*
+ * @return  char** pointer to the start of the split char*
  */
 char** string_split(char* query, char* delim) {
 	char store[MSG_BUFFER_LENGTH];
