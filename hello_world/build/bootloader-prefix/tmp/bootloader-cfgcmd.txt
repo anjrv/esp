@@ -1,1 +1,0 @@
-cmd='/usr/bin/cmake;-DSDKCONFIG=/home/anjrv/esp/hello_world/sdkconfig;-DIDF_PATH=/home/anjrv/esp/esp-idf;-DIDF_TARGET=esp32;-DPYTHON_DEPS_CHECKED=1;-DPYTHON=/home/anjrv/.espressif/python_env/idf4.3_py3.9_env/bin/python;-DEXTRA_COMPONENT_DIRS=/home/anjrv/esp/esp-idf/components/bootloader;-DLEGACY_INCLUDE_COMMON_HEADERS=;-GNinja;<SOURCE_DIR><SOURCE_SUBDIR>'
