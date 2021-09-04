@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "stack.h"
+#include "dict.h"
 #include "utils.h"
 #include "commands.h"
 
@@ -37,8 +38,8 @@ void serial_out(const char* string) {
 /**
  * respond(..) provides routing for the given query string 
  * Sends out the outcome of the command + argument combination
- **/
-void respond(char* q, struct stack *pt) {
+ */
+void respond(char* q, stack *pt, dict* d) {
 	// Split query on single space ' ' delimiter
 	char** split = string_split(q, " ");
 
@@ -55,19 +56,19 @@ void respond(char* q, struct stack *pt) {
 
 		// "Switch" through available commands
 		if (strcmp(COMMAND, "PING") == 0) {
-			serial_out(command_ping(i));
+			serial_out(command_ping());
 		} else if (strcmp(COMMAND, "MAC") == 0) {
-			serial_out(command_mac(i));
+			serial_out(command_mac());
 		} else if (strcmp(COMMAND, "ID") == 0 ) {
-			serial_out(command_id(i));
+			serial_out(command_id());
 		} else if (strcmp(COMMAND, "VERSION") == 0) {
-			serial_out(command_version(i));
+			serial_out(command_version());
 		} else if (strcmp(COMMAND, "ERROR") == 0) {
-			serial_out(get_error(i));
+			serial_out(get_error());
 		} else if (strcmp(COMMAND, "STORE") == 0) {
-			serial_out(command_store(i, split));
+			serial_out(command_store(i, split, d));
 		} else if (strcmp(COMMAND, "QUERY") == 0) {
-			serial_out(command_query(i, split));
+			serial_out(command_query(i, split, d));
 		} else if (strcmp(COMMAND, "PUSH") == 0) {
 			serial_out(command_push(i, split, pt));
 		} else if (strcmp(COMMAND, "POP") == 0) {
@@ -79,6 +80,7 @@ void respond(char* q, struct stack *pt) {
 			serial_out("command error");
 		}
 	} else {
+		// No command input
 		serial_out("command error");
 	} 
 
@@ -91,13 +93,14 @@ void respond(char* q, struct stack *pt) {
  * 
  * If length is satisfied query string is
  * routed to the respond() function.
- **/
+ */
 void app_main(void)
 {
 	serial_out("firmware ready");
 
 	char query[MSG_BUFFER_LENGTH];
-	struct stack *pt = newStack(STACK_SIZE);
+	stack *pt = newStack(STACK_SIZE);
+	dict* d = create_dict(CAPACITY); 
 
 	while (true) {
 		int complete = 0;
@@ -122,7 +125,7 @@ void app_main(void)
 			}
 		}
 
-		respond(query, pt);
+		respond(query, pt, d);
 		serial_out("");
 	}
 }

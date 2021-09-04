@@ -17,7 +17,7 @@
  * @param   x number to be converted
  * @return  A char array representation
  *          of x 
- **/
+ */
 char* int_to_string(int x) {
     int digit = log10(x) + 1;
 
@@ -48,7 +48,7 @@ char* int_to_string(int x) {
  * @param   query the char* to be split
  * @param   delim the delimiters to be used when splitting
  * @return  char** referring to the start of the split char*
- **/
+ */
 char** string_split(char* query, char* delim) {
 	char store[MSG_BUFFER_LENGTH];
 	strcpy(store, query);

@@ -4,44 +4,82 @@
 
 #include "stack.h"
 
-struct stack
-{
+struct stack {
     int maxsize;
     int top;
     int *items;
 };
 
-struct stack* newStack(int capacity) {
-    struct stack *pt = (struct stack*)malloc(sizeof(struct stack));
- 
+/**
+ * Creates a new stack struct with the requested capacity
+ * 
+ * @param capacity how many values should the stack be able to hold
+ * @return a pointer to the newly made stack struct
+ */
+stack* newStack(int capacity) {
+    stack *pt = (stack*)malloc(sizeof(struct stack));
     pt->maxsize = capacity;
     pt->top = -1;
     pt->items = (int*)malloc(sizeof(int) * capacity);
  
     return pt;
 }
- 
-int size(struct stack *pt) {
+
+/**
+ * Returns the current quantity of values in the stack
+ * 
+ * @param pt pointer to the stack to check
+ * @return the quantity of values in the stack
+ */ 
+int size(stack *pt) {
     return pt->top + 1;
 }
  
-int isEmpty(struct stack *pt) {
+/**
+ * Returns whether the stack is empty or not
+ * 
+ * @param pt pointer to the stack to check 
+ * @return a boolean which indicates if the stack is empty
+ */ 
+int isEmpty(stack *pt) {
     return pt->top == -1;
 }
- 
-int isFull(struct stack *pt) {
+
+/**
+ * Returns whether the stack is full or not
+ * 
+ * @param pt pointer to the stack to check
+ * @return a boolean which indicates if the stack is full 
+ */ 
+int isFull(stack *pt) {
     return pt->top == pt->maxsize - 1;
 }
- 
-void push(struct stack *pt, int x) {
+
+/**
+ * Pushes the int x onto the stack if it is not yet full
+ * 
+ * If the stack is full it will exit with a non 0 condition
+ * 
+ * @param x the int to push onto the stack
+ * @param pt pointer to the stack to push to
+ */ 
+void push(stack *pt, int x) {
     if (isFull(pt)) {
         exit(EXIT_FAILURE);
     }
 
     pt->items[++pt->top] = x;
 }
- 
-int peek(struct stack *pt) {
+
+/**
+ * Returns the value of the first int on the stack
+ * without popping it
+ * 
+ * If the stack is empty it will exit with a non 0 condition
+ *
+ * @param pt pointer to the stack to peek in 
+ */ 
+int peek(stack *pt) {
     if (!isEmpty(pt)) {
         return pt->items[pt->top];
     }
@@ -49,8 +87,15 @@ int peek(struct stack *pt) {
         exit(EXIT_FAILURE);
     }
 }
- 
-int pop(struct stack *pt) {
+
+/**
+ * Pops the first value on the stack and returns it
+ * 
+ * If the stack is empty it will exit with a non 0 condition
+ * 
+ * @param pt pointer to the stack to pop
+ */ 
+int pop(stack *pt) {
     if (isEmpty(pt)) {
         exit(EXIT_FAILURE);
     }
