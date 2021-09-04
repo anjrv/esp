@@ -51,28 +51,28 @@ void respond(char* q, stack *pt, dict* d) {
 	if (i > 0) {
 		// Cast command to uppercase to remove
 		// Case sensitivity
-		const char* COMMAND = strupr(split[0]);
+		char* command = strupr(split[0]);
 
 		// "Switch" through available commands
-		if (strcmp(COMMAND, "PING") == 0) {
+		if (strcmp(command, "PING") == 0) {
 			serial_out(command_ping());
-		} else if (strcmp(COMMAND, "MAC") == 0) {
+		} else if (strcmp(command, "MAC") == 0) {
 			serial_out(command_mac());
-		} else if (strcmp(COMMAND, "ID") == 0 ) {
+		} else if (strcmp(command, "ID") == 0 ) {
 			serial_out(command_id());
-		} else if (strcmp(COMMAND, "VERSION") == 0) {
+		} else if (strcmp(command, "VERSION") == 0) {
 			serial_out(command_version());
-		} else if (strcmp(COMMAND, "ERROR") == 0) {
+		} else if (strcmp(command, "ERROR") == 0) {
 			serial_out(get_error());
-		} else if (strcmp(COMMAND, "STORE") == 0) {
+		} else if (strcmp(command, "STORE") == 0) {
 			serial_out(command_store(i, split, d));
-		} else if (strcmp(COMMAND, "QUERY") == 0) {
+		} else if (strcmp(command, "QUERY") == 0) {
 			serial_out(command_query(i, split, d));
-		} else if (strcmp(COMMAND, "PUSH") == 0) {
+		} else if (strcmp(command, "PUSH") == 0) {
 			serial_out(command_push(i, split, pt));
-		} else if (strcmp(COMMAND, "POP") == 0) {
+		} else if (strcmp(command, "POP") == 0) {
 			serial_out(command_pop(pt));
-		} else if (strcmp(COMMAND, "ADD") == 0) {
+		} else if (strcmp(command, "ADD") == 0) {
 			serial_out(command_add(i, split, pt));
 		} else {
 			// Default case, command does not exist
@@ -83,7 +83,7 @@ void respond(char* q, stack *pt, dict* d) {
 		// No command input
 		set_error("command error", "");
 		serial_out("command error");
-	} 
+	}
 
 	free(split);
 }

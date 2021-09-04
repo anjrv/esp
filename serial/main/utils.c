@@ -11,30 +11,32 @@
 // These are assorted helper functions
 // for use elsewhere in the project
 
-char buffer[11];
-
 /**
- * Converts a char* to an integer and returns its value
- * FAILURE: If an empty string is given or the value is
- *          not a number, the function returns 0
+ * Converts a char* to an integer and returns its pointer 
  * 
  * @param str The string to be converted to an integer 
- * @return a parsed integer if conversion was possible,
- *         0 if conversion was not possible 
+ * @return a pointer to the value of the parsed integer, 
+ *         a null pointer if parsing was unsuccesful
  */
-int parse_int(char* str) {
+int* parse_int(char* str) {
     char *endptr;
-    long x = strtol(str, &endptr, 10);
-    if (x >= INT_MIN && x <= INT_MAX && endptr > str) {
-        int res = x;
-        return res;
+    static int val = 0;
+
+    if (strcmp(str, "0") == 0) {
+        return (&val);
     }
 
-    return 0;
+    long long x = strtoll(str, &endptr, 10);
+    if (x >= INT_MIN && x <= INT_MAX && endptr > str && x != 0) {
+        val = x;
+        return (&val);
+    }
+
+    return NULL;
 }
 
 /**
- * Converts an int to a char* representation
+ * Converts a number to a char* representation
  * with an ending null terminator and returns
  * the start pointer
  * 
@@ -42,8 +44,10 @@ int parse_int(char* str) {
  * @return  A char array representation
  *          of x 
  */
-char* int_to_string(int x) {
-    snprintf(buffer, 10, "%d", x);
+char* long_to_string(long x) {
+    static char buffer[17];
+
+    snprintf(buffer, 10, "%ld", x);
     return buffer;
 }
 
@@ -56,7 +60,7 @@ char* int_to_string(int x) {
  * @return  char** pointer to the start of the split char*
  */
 char** string_split(char* query, char* delim) {
-	char store[MSG_BUFFER_LENGTH];
+    static char store[MSG_BUFFER_LENGTH];
 	strcpy(store, query);
 
     char** res = NULL;
@@ -71,7 +75,7 @@ char** string_split(char* query, char* delim) {
     }
 
     res = realloc(res, sizeof(char*) * (space+1));
-    res[space] = 0;
+    res[space] = '\0';
 
     return res;
 }

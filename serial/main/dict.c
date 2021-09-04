@@ -171,13 +171,9 @@ int* query(dict* d, char* key) {
  
     if (item != NULL) {
         if (strcmp(item->key, key) == 0) {
-            // Initialize static variable
             static int val = 0;
-
-            // Assign value of item
             val = item->value;
 
-            // Send pointer to value
             return (&val);
         }
     }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <regex.h>
 
 #include "esp_wifi.h"
 #include "version.h"
@@ -119,6 +120,26 @@ char* command_version() {
     return version;
 }
 
+int validate_name(char* key) {
+    regex_t re;
+
+    const char* pattern = "[a-zA-Z_]+";
+    // "[a-z_A-Z]{1,16} refuses to check count??
+    
+    if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
+        return 0;
+    }
+
+    int status = regexec(&re, key, (size_t)0, NULL, 0);
+    regfree(&re);
+
+    if (status != 0) { 
+        return 0;
+    }
+
+    return 1;
+}
+
 /**
  * Stores a signed 32-bit integer onto the device dictionary
  * 
@@ -134,43 +155,28 @@ char* command_version() {
 char* command_store(int num_args, char** vars, dict* d) {
     char* res;
 
-    if (num_args > 2) {
-        if (strcmp(vars[2], "0") == 0) {
-            int var = 0;
-            int* stored = query(d, vars[1]);
+    if (num_args > 2 && strlen(vars[1]) <= 16) {
+        if (validate_name(vars[1])) {
+            int *var = parse_int(vars[2]);
+            if (var) {
+                int val = *var;
 
-            if (stored) {
-                res = int_to_string(*stored);
-            } else {
-                res = "undefined";
-            }
-
-            store(d, vars[1], var);
-            set_error("success", "");
-            return res;
-        } else {
-            int var = parse_int(vars[2]);
-            if(var != 0) {
-                int* stored = query(d, vars[1]);
-
+                int *stored = query(d, vars[1]);
                 if (stored) {
-                    res = int_to_string(*stored);
+                    int old = *stored;
+                    res = long_to_string(old);
                 } else {
                     res = "undefined";
                 }
 
-                store(d, vars[1], var);
+                store(d, vars[1], val);
                 set_error("success", "");
                 return res;
             }
-
-            // If argument was parsed to 0 after explicit check
-            // Then it is either NaN or an empty string
-            // Either way let it drop to argument error below
         }
     }
 
-    // Insufficient arguments given
+    // Insufficient arguments given or invalid name
     res = "argument error";
     set_error("argument error", "store");
     return res;
@@ -195,7 +201,8 @@ char* command_query(int num_args, char** vars, dict* d) {
     stored = query(d, vars[1]);
 
     if (stored) {
-        res = int_to_string(*stored);
+        int val = *stored;
+        res = long_to_string(val);
         set_error("success","");
     } else {
         res = "undefined";
@@ -225,16 +232,10 @@ char* command_push(int num_args, char** vars, stack *pt) {
         return "overflow";
     }
 
-    if (strcmp(vars[1], "0") == 0) {
-        push(pt, 0);
-        set_error("success","");
-        return "done";
-    }
-
-    // If we get 0 here then value is NaN
-    int res = parse_int(vars[1]);
-    if (res != 0) {
-        push(pt, res);
+    int *res = parse_int(vars[1]);
+    if (res) {
+        int val = *res;
+        push(pt, val);
         set_error("success","");
         return "done";
     }
@@ -265,38 +266,40 @@ char* command_add(int num_args, char** vars, stack *pt) {
         return "undefined";
     } 
 
-    int var1 = 0;
-    int var2 = 0;
+    int *var1 = NULL;
 
-    if (strcmp(vars[1], "0") != 0) {
-        var1 = parse_int(vars[1]);
-        if (var1 == 0) {
-            set_error("argument error", "add");
-            return "argument error";
-        }
-    }
+    var1 = parse_int(vars[1]);
+    if (var1) {
+        int val1 = (long int)*var1;
+        int val2;
 
-    if (num_args > 2) {
-        if (strcmp(vars[2], "0") != 0) {
-            var2 = parse_int(vars[2]);
-            if (var2 == 0) {
+        if (num_args > 2) {
+            int *var2 = parse_int(vars[2]);
+
+            if (!var2) {
                 set_error("argument error", "add");
                 return "argument error";
             }
+
+            val2 = *var2;
+            char* res = long_to_string(val1 + val2);
+
+            set_error("success", "");
+            return res;   
+        } else if (!is_stack_empty(pt)) {
+            val2 = peek(pt);
+            char* res = long_to_string(val1 + val2);
+
+            set_error("success", "");
+            return res;   
         }
     } else {
-        if (!is_stack_empty(pt)) {
-            var2 = peek(pt);
-        } else {
-            set_error("undefined", "add");
-            return "undefined";
-        }
+        set_error("argument error", "add");
+        return "argument error";
     }
 
-    char* res = int_to_string(var1 + var2);
-
-    set_error("success", "");
-    return res;
+    set_error("undefined", "add");
+    return "undefined";
 }
 
 /**
@@ -318,7 +321,7 @@ char* command_pop(stack *pt) {
     } 
 
     int val  = pop(pt);
-    char* res = int_to_string(val);
+    char* res = long_to_string(val);
 
     set_error("success", "");
     return res;
