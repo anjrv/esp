@@ -13,9 +13,10 @@
 unsigned long hash_function(char* str) {
     unsigned long i = 0;
     for (int j=0; str[j]; j++)
-        i = i * 31 + str[j];
+        // Small prime of 31
+        i = (31 * i + str[j]) % CAPACITY;
     
-    return i % CAPACITY;
+    return i;
 }
 
 /**
