@@ -1,7 +1,7 @@
 #ifndef DICT_H_ 
 #define DICT_H_ 
 
-#define CAPACITY 1000
+#define CAPACITY 5000
 
 typedef struct {
     char* key;

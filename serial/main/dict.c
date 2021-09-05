@@ -4,17 +4,6 @@
 
 #include "dict.h"
 
-struct dict_item {
-    char* key;
-    int value;
-};
-
-struct dict {
-    dict_item** items;
-    int size;
-    int count;
-};
-
 /**
  * Helper function for index hashing
  * 

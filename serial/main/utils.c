@@ -18,20 +18,24 @@
  * @param str The string to be converted to an integer 
  * @param ptr The pointer that will store the result
  */
-void parse_int(char* str, int* ptr) {
+int parse_int(char* str, int* ptr) {
     char *endptr;
 
     if (strcmp(str, "0") == 0) {
         *ptr = 0;
+
+        return 1;
     }
 
     long long x = strtoll(str, &endptr, 10);
     if (x >= INT_MIN && x <= INT_MAX && endptr > str && x != 0) {
         int res = x;
         *ptr = res;
+
+        return 1;
     }
 
-    ptr = NULL;
+    return 0;
 }
 
 /**

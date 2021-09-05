@@ -4,12 +4,6 @@
 
 #include "stack.h"
 
-struct stack {
-    int maxsize;
-    int top;
-    int *items;
-};
-
 /**
  * Creates a new stack struct with the requested capacity
  * 
@@ -17,7 +11,7 @@ struct stack {
  * @return a pointer to the newly made stack struct
  */
 stack* create_stack(int capacity) {
-    stack *pt = (stack*)malloc(sizeof(struct stack));
+    stack *pt = (stack*)malloc(sizeof(stack));
     pt->maxsize = capacity;
     pt->top = -1;
     pt->items = (int*)malloc(sizeof(int) * capacity);

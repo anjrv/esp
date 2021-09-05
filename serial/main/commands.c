@@ -159,11 +159,11 @@ char* command_store(int num_args, char** vars, dict* d) {
         if (validate_name(vars[1])) {
             int *var;
             var = malloc(sizeof(*var));
-            parse_int(vars[2], var);
 
-            if (var) {
+            if (parse_int(vars[2], var)) {
                 int *stored;
                 stored = malloc(sizeof(*stored));
+
                 if (query(d, vars[1], stored)) {
                     res = long_to_string(*stored);
                 } else {
@@ -237,9 +237,8 @@ char* command_push(int num_args, char** vars, stack *pt) {
 
     int *res;
     res = malloc(sizeof(*res));
-    parse_int(vars[1], res);
 
-    if (res) {
+    if (parse_int(vars[1], res)) {
         push(pt, *res);
         free(res);
         set_error("success","");
@@ -274,16 +273,13 @@ char* command_add(int num_args, char** vars, stack *pt) {
 
     int *var1;
     var1 = malloc(sizeof(*var1));
-    parse_int(vars[1], var1);
 
-    if (var1) {
+    if (parse_int(vars[1], var1)) {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
         if (num_args > 2) {
-            parse_int(vars[2], var2);
-
-            if (!var2) {
+            if (!parse_int(vars[2], var2)) {
                 set_error("argument error", "add");
                 return "argument error";
             }
