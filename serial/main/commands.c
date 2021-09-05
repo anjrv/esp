@@ -152,7 +152,7 @@ int validate_name(char* key) {
  * @return the previously stored variable if there was one
  *         if there wasn't one returns "undefined" 
  */
-char* command_store(int num_args, char** vars, dict* d) {
+char* command_store(int num_args, char** vars, key_list* list) {
     char* res;
 
     if (num_args > 2 && strlen(vars[1]) <= 16) {
@@ -164,13 +164,13 @@ char* command_store(int num_args, char** vars, dict* d) {
                 int *stored;
                 stored = malloc(sizeof(*stored));
 
-                if (query(d, vars[1], stored)) {
+                if (query(list, stored, vars[1])) {
                     res = long_to_string(*stored);
                 } else {
                     res = "undefined";
                 }
 
-                store(d, vars[1], *var);
+                store(list, *var, vars[1]);
 
                 free(stored);
                 free(var);
@@ -198,12 +198,12 @@ char* command_store(int num_args, char** vars, dict* d) {
  * @return the stored variable at the given name if there is one 
  *         if there isn't one returns "undefined" 
  */
-char* command_query(int num_args, char** vars, dict* d) {
+char* command_query(int num_args, char** vars, key_list* list) {
     char* res;
     int *stored;
 
     stored = malloc(sizeof(*stored));
-    if (query(d, vars[1], stored)) {
+    if (query(list, stored, vars[1])) {
         res = long_to_string(*stored);
         set_error("success","");
     } else {
