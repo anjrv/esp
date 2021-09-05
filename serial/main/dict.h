@@ -18,6 +18,6 @@ dict* create_dict(int size);
 
 int is_dict_full(dict* d);
 void store(dict* d, char* key, int value);
-int* query(dict* d, char* key);
+int query(dict* d, char* key, int* ptr);
 
 #endif

@@ -12,33 +12,36 @@
 // for use elsewhere in the project
 
 /**
- * Converts a char* to an integer and returns its pointer 
+ * Converts a char* to an integer and stores the result
+ * in the given pointer 
  * 
  * @param str The string to be converted to an integer 
- * @return a pointer to the value of the parsed integer, 
- *         a null pointer if parsing was unsuccesful
+ * @param ptr The pointer that will store the result
  */
-int* parse_int(char* str) {
+void parse_int(char* str, int* ptr) {
     char *endptr;
-    static int val = 0;
 
     if (strcmp(str, "0") == 0) {
-        return (&val);
+        *ptr = 0;
     }
 
     long long x = strtoll(str, &endptr, 10);
     if (x >= INT_MIN && x <= INT_MAX && endptr > str && x != 0) {
-        val = x;
-        return (&val);
+        int res = x;
+        *ptr = res;
     }
 
-    return NULL;
+    ptr = NULL;
 }
 
 /**
  * Converts a number to a char* representation
  * with an ending null terminator and returns
  * the start pointer
+ * 
+ * NOTE: Used for serial response parsing,
+ *       should not be used in parallel
+ *       due to static storage
  * 
  * @param   x number to be converted
  * @return  A char array representation
@@ -54,6 +57,14 @@ char* long_to_string(long x) {
 /**
  * Splits a given query char** into multiple char*
  * elements using the given delim argument
+ * 
+ * NOTE: Used for serial query parsing,
+ *       should not be used in parallel
+ *       due to static storage
+ * 
+ *       Should be turned into a void with a char**
+ *       param if we later add something like
+ *       piping delimiters
  * 
  * @param   query the char* to be split
  * @param   delim the delimiters to be used when splitting

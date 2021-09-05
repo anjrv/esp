@@ -157,19 +157,23 @@ char* command_store(int num_args, char** vars, dict* d) {
 
     if (num_args > 2 && strlen(vars[1]) <= 16) {
         if (validate_name(vars[1])) {
-            int *var = parse_int(vars[2]);
-            if (var) {
-                int val = *var;
+            int *var;
+            var = malloc(sizeof(*var));
+            parse_int(vars[2], var);
 
-                int *stored = query(d, vars[1]);
-                if (stored) {
-                    int old = *stored;
-                    res = long_to_string(old);
+            if (var) {
+                int *stored;
+                stored = malloc(sizeof(*stored));
+                if (query(d, vars[1], stored)) {
+                    res = long_to_string(*stored);
                 } else {
                     res = "undefined";
                 }
 
-                store(d, vars[1], val);
+                store(d, vars[1], *var);
+
+                free(stored);
+                free(var);
                 set_error("success", "");
                 return res;
             }
@@ -195,20 +199,19 @@ char* command_store(int num_args, char** vars, dict* d) {
  *         if there isn't one returns "undefined" 
  */
 char* command_query(int num_args, char** vars, dict* d) {
-    int *stored;
     char* res;
+    int *stored;
 
-    stored = query(d, vars[1]);
-
-    if (stored) {
-        int val = *stored;
-        res = long_to_string(val);
+    stored = malloc(sizeof(*stored));
+    if (query(d, vars[1], stored)) {
+        res = long_to_string(*stored);
         set_error("success","");
     } else {
         res = "undefined";
         set_error("undefined", "query");
     }
 
+    free(stored);
     return res;
 }
 
@@ -232,10 +235,13 @@ char* command_push(int num_args, char** vars, stack *pt) {
         return "overflow";
     }
 
-    int *res = parse_int(vars[1]);
+    int *res;
+    res = malloc(sizeof(*res));
+    parse_int(vars[1], res);
+
     if (res) {
-        int val = *res;
-        push(pt, val);
+        push(pt, *res);
+        free(res);
         set_error("success","");
         return "done";
     }
@@ -266,30 +272,34 @@ char* command_add(int num_args, char** vars, stack *pt) {
         return "undefined";
     } 
 
-    int *var1 = NULL;
+    int *var1;
+    var1 = malloc(sizeof(*var1));
+    parse_int(vars[1], var1);
 
-    var1 = parse_int(vars[1]);
     if (var1) {
-        int val1 = (long int)*var1;
-        int val2;
+        int *var2;
+        var2 = malloc(sizeof(*var2));
 
         if (num_args > 2) {
-            int *var2 = parse_int(vars[2]);
+            parse_int(vars[2], var2);
 
             if (!var2) {
                 set_error("argument error", "add");
                 return "argument error";
             }
 
-            val2 = *var2;
-            char* res = long_to_string(val1 + val2);
+            char* res = long_to_string(*var1 + *var2);
 
             set_error("success", "");
+            free(var1);
+            free(var2);
             return res;   
         } else if (!is_stack_empty(pt)) {
-            val2 = peek(pt);
-            char* res = long_to_string(val1 + val2);
+            *var2 = peek(pt);
+            char* res = long_to_string(*var1 + *var2);
 
+            free(var1);
+            free(var2);
             set_error("success", "");
             return res;   
         }

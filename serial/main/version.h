@@ -2,13 +2,33 @@
 #define VERSION_H_ 
 
 #define DEVELOPER_ID "s114"
-
-// All firmware versions start counting from 1 not 0
-// Assignment number
 #define MAJOR 1
-// Major implementation addition e.g. dictionary or stack
 #define MINOR 3
-// Minor revision changes with no large additions
 #define REVISION 2
+
+/**
+ * VERSION HISTORY
+ * 
+ * 1.0.0 - Initial assignment setup
+ * 
+ * 1.1.0 - Routing if statement table
+ *         Command functions
+ * 
+ * 1.1.1 - Split helper function
+ * 
+ * 1.1.2 - Integer parsing function
+ * 
+ * 1.2.0 - Stack structure added
+ * 
+ * 1.3.0 - Dictionary/Hashtable structure added
+ * 
+ * 1.3.1 - Integer parsing changed to mutate pointer
+ *         and return void to allow parallel use
+ *         and memory management
+ * 
+ * 1.3.2 - Dictionary query method changed to mutate pointer
+ *         and return an integer TRUE/FALSE to more easily
+ *         manage whether key value pairs exist or not
+ */
 
 #endif

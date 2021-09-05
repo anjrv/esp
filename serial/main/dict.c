@@ -160,23 +160,30 @@ void store(dict* d, char* key, int value) {
 /**
  * Function to search for a stored item in a given dictionary
  * 
+ * NOTE: Some nonsense pointer passing was done here to be able
+ *       to return values that indicate whether a pair was actually
+ *       found or not ...
+ * 
+ *       Cannot indicate TRUE/FALSE with a simple int return: 
+ *       Values such as 0 and -1 are valid integers that can be stored
+ * 
  * @param d     the dictionary to search in
  * @param key   the key to search for 
- * @return a pointer to the value stored at the key, 
- *         a null pointer if nothing is found
+ * @param ptr   the pointer to store the result
+ * @return TRUE/FALSE referring to whether the key
+ *         was found
  */
-int* query(dict* d, char* key) {
+int query(dict* d, char* key, int* ptr) {
     int index = hash_function(key);
     dict_item* item = d->items[index];
  
     if (item != NULL) {
         if (strcmp(item->key, key) == 0) {
-            static int val = 0;
-            val = item->value;
+            *ptr = item->value;
 
-            return (&val);
+            return 1;
         }
     }
 
-    return NULL;
+    return 0;
 }
