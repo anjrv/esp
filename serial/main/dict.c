@@ -13,10 +13,8 @@
 unsigned long hash_function(char* str) {
     unsigned long i = 0;
     for (int j=0; str[j]; j++)
-        i += str[j];
+        i = i * 31 + str[j];
     
-    // Hash is calculated from the constant CAPACITY
-    // see dict.h for current maximum capacity
     return i % CAPACITY;
 }
 
@@ -119,7 +117,7 @@ void handle_collision(dict* d, dict_item* item) {
  */
 void store(dict* d, char* key, int value) {
     dict_item* item = create_item(key, value);
-    int index = hash_function(key);
+    unsigned long index = hash_function(key);
  
     dict_item* current_item = d->items[index];
      
@@ -163,7 +161,7 @@ void store(dict* d, char* key, int value) {
  *         was found
  */
 int query(dict* d, char* key, int* ptr) {
-    int index = hash_function(key);
+    unsigned long index = hash_function(key);
     dict_item* item = d->items[index];
  
     if (item != NULL) {
