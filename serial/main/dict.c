@@ -4,64 +4,58 @@
 
 #include "dict.h"
 
-key_list* new_list() {
-    key_list* res = (key_list*) malloc (sizeof(key_list));
-    res->pairs = (key_value**) malloc (sizeof(key_value));
-    res->count = 0;
+node* allocate_list() {
+    node *head = NULL;
 
-    return res;
+    return head;        
 }
 
-void free_item(key_value* item) {
-    free(item->key);
-    free(item);
-}
+int store(*node list, int value, char* key, int* ptr) {
+    node *new = (node*) malloc (sizeof(node));
+    new->key = (char*) malloc (strlen(key) + 1);
 
-void free_list(key_list* collection) {
-    if (collection == NULL) {
-        return;
-    }
+    strcpy(new->key, key);
+    new->value = value;
+    new->next = NULL;
 
-    for (size_t i = 0; i < collection->count; i++) {
-        free_item(collection->pairs[i]);
-    }
+    if (!list) {
+        list = new;
 
-    free(collection);
-}
+        return 0;
+    } else {
+        node* curr = list;
+        while(curr->next) {
+            if (strcmp(curr->key, key) == 0) {
+                *ptr = curr->value;
+                curr->value = value;
+                free(new->key);
+                free(new);
 
-int store(key_list* collection, int value, char* key, int* ptr) {
-    // Replace
-    for (size_t i = 0; i < collection->count; i++) {
-        if(strcmp(collection->pairs[i]->key, key) == 0) {
-            *ptr = collection->pairs[i]->value;
-            collection->pairs[i]->value = value;
-            
-            return 1;
+                return 1;
+            }
+
+            if (curr->next == NULL) {
+                curr->next = new;
+
+                return 0;
+            }
+
+            curr = curr->next;
         }
     }
-
-    // Allocate
-    key_value* item = (key_value*) malloc (sizeof(key_value));
-    item->value = value;
-    item->key = (char*) malloc (strlen(key) + 1);
-    strcpy(item->key, key);
-
-    int count = collection->count;
-    collection = realloc(collection, sizeof(item) * (collection->count+1));
-    collection->pairs[count] = item;
-    collection->count++;
-
-    return 0;
 }
 
-int query(key_list* collection, int* ptr, char* key) {
-    for (size_t i = 0; i < collection->count; i++) {
-        if(strcmp(collection->pairs[i]->key, key) == 0) {
-            *ptr = collection->pairs[i]->value;
+int query(*node list, int* ptr, char* key) {
+    node* curr = list;
+    while(curr->next) {
+        if (strcmp(curr->key, key) == 0) {
+            *ptr = curr->value;
 
             return 1;
         }
-    } 
+
+        curr = curr->next;
+    }
 
     return 0;
 }
