@@ -6,6 +6,7 @@
 
 key_list* new_list() {
     key_list* res = (key_list*) malloc (sizeof(key_list));
+    res->pairs = (key_value**) malloc (sizeof(key_value));
     res->count = 0;
 
     return res;
@@ -46,6 +47,7 @@ int store(key_list* collection, int value, char* key, int* ptr) {
     strcpy(item->key, key);
 
     int count = collection->count;
+    collection = realloc(collection, sizeof(item) * (collection->count+1));
     collection->pairs[count] = item;
     collection->count++;
 
