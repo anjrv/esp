@@ -1,20 +1,24 @@
 #ifndef DICT_H_ 
 #define DICT_H_ 
 
-typedef struct node node;
-
-struct node {
+typedef struct {
     char* key;
     int value;
-    node *next;
-};
+} key_value;
 
-node* allocate_list();
-int store(node* list, char* key, int value, int* ptr);
-int query(node* list, int* ptr, char* key);
+typedef struct {
+    key_value** pairs;
+    size_t capacity;
+    size_t count;
+} key_list;
 
-// #define CAPACITY 2
-// 
+key_list* new_list();
+void free_list(key_list* collection);
+int store(key_list* collection, int value, char* key, int* ptr);
+int query(key_list* collection, int* ptr, char* key);
+
+// #define CAPACITY 50
+//
 // typedef struct {
 //     char* key;
 //     int value;
@@ -38,6 +42,6 @@ int query(node* list, int* ptr, char* key);
 // 
 // int is_dict_full(dict* d);
 // void store(dict* d, char* key, int value);
-// int query(dict* d, int* ptr, char* key);
+// int query(dict* d, char* key, int* ptr);
 
 #endif

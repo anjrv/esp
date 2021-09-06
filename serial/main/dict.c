@@ -4,71 +4,75 @@
 
 #include "dict.h"
 
-node* allocate_list() {
-    node *head = malloc (sizeof(node));
-    head->key = NULL;
-    head->value = 0;
-    head->next = NULL;
+key_list* new_list() {
+    key_list* res = (key_list*) malloc (sizeof(key_list));
+    res->count = 0;
 
-    return head;        
+    return res;
 }
 
-int store(node* list, char* key, int value, int* ptr) {
-    if (!list->key) {
-        list->key = key;
-        list->value = value;
+void free_item(key_value* item) {
+    free(item->key);
+    free(item);
+}
 
-        return 0;
+void free_list(key_list* collection) {
+    if (collection == NULL) {
+        return;
     }
 
-    node* curr = list;
+    for (size_t i = 0; i < collection->count; i++) {
+        free_item(collection->pairs[i]);
+    }
 
-    while(curr->key) {
-        if (strcmp(curr->key, key) == 0) {
-            *ptr = curr->value;
-            curr->value = value;
+    free(collection);
+}
 
+int store(key_list* collection, int value, char* key, int* ptr) {
+    // Replace
+    for (size_t i = 0; i < collection->count; i++) {
+        if(strcmp(collection->pairs[i]->key, key) == 0) {
+            *ptr = collection->pairs[i]->value;
+            collection->pairs[i]->value = value;
+            
             return 1;
         }
-
-        if (curr->next == NULL) {
-            node *new = (node*) malloc (sizeof(node));
-            new->key = (char*) malloc (strlen(key) + 1);
-            strcpy(new->key, key);
-            new->value = value;
-            new->next = NULL;
-
-            curr->next = new;
-            return 0;
-        }
-
-        curr = curr->next;
     }
+
+    // Allocate
+    key_value* item = (key_value*) malloc (sizeof(key_value));
+    item->value = value;
+    item->key = (char*) malloc (strlen(key) + 1);
+    strcpy(item->key, key);
+
+    int count = collection->count;
+    collection->pairs[count] = item;
+    collection->count++;
 
     return 0;
 }
 
-int query(node* list, int* ptr, char* key) {
-    node* curr = list;
-    while(curr->next) {
-        if (strcmp(curr->key, key) == 0) {
-            *ptr = curr->value;
+int query(key_list* collection, int* ptr, char* key) {
+    for (size_t i = 0; i < collection->count; i++) {
+        if(strcmp(collection->pairs[i]->key, key) == 0) {
+            *ptr = collection->pairs[i]->value;
 
             return 1;
         }
-
-        curr = curr->next;
-    }
+    } 
 
     return 0;
 }
 
-// linked_list* allocate_list() {
+// As it turns out once overflow protection is added this is a bit problematic for memory
+// ......
+//
+// static linked_list* allocate_list() {
 //     linked_list* list = (linked_list*) malloc (sizeof(linked_list));
 //     return list;
 // }
 // 
-// linked_list* list_insert(linked_list* list, dict_item* item) {
+// static linked_list* list_insert(linked_list* list, dict_item* item) {
 //     if (!list) {
 //         linked_list* head = allocate_list();
 //         head->item = item;
@@ -97,7 +101,7 @@ int query(node* list, int* ptr, char* key) {
 //     return list;
 // }
 // 
-// void free_list(linked_list* list) {
+// static void free_list(linked_list* list) {
 //     linked_list* temp = list;
 //     while (list) {
 //         temp = list;
@@ -109,7 +113,7 @@ int query(node* list, int* ptr, char* key) {
 //     }
 // }
 // 
-// linked_list** create_overflow(dict* d) {
+// static linked_list** create_overflow(dict* d) {
 //     linked_list** buckets = (linked_list**) calloc (d->size, sizeof(linked_list*));
 //     for (int i=0; i<d->size; i++) {
 //         buckets[i] = NULL;
@@ -118,7 +122,7 @@ int query(node* list, int* ptr, char* key) {
 //     return buckets;
 // }
 // 
-// void free_overflow(dict* d) {
+// static void free_overflow(dict* d) {
 //     linked_list** buckets = d->overflow;
 //     for (int i=0; i<d->size; i++) {
 //         free_list(buckets[i]);
@@ -135,7 +139,7 @@ int query(node* list, int* ptr, char* key) {
 //  * @param index the index of the collision
 //  * @param item  the item causing the collision
 //  */
-// void handle_collision(dict* d, int index, dict_item* item) {
+// void handle_collision(dict* d, unsigned long index, dict_item* item) {
 //     linked_list* head = d->overflow[index];
 //  
 //     if (head == NULL) {
@@ -296,7 +300,7 @@ int query(node* list, int* ptr, char* key) {
 //  * @return TRUE/FALSE referring to whether the key
 //  *         was found
 //  */
-// int query(dict* d, int* ptr, char* key) {
+// int query(dict* d, char* key, int* ptr) {
 //     unsigned long index = hash_function(key);
 //     dict_item* item = d->items[index];
 //     linked_list* head = d->overflow[index];
@@ -369,3 +373,4 @@ int query(node* list, int* ptr, char* key) {
 //         }
 //     }
 // }
+// 
