@@ -152,7 +152,7 @@ int validate_name(char* key) {
  * @return the previously stored variable if there was one
  *         if there wasn't one returns "undefined" 
  */
-char* command_store(int num_args, char** vars, key_list* list) {
+char* command_store(int num_args, char** vars, node* d) {
     char* res;
 
     if (num_args > 2 && strlen(vars[1]) <= 16) {
@@ -164,7 +164,7 @@ char* command_store(int num_args, char** vars, key_list* list) {
                 int *stored;
                 stored = malloc(sizeof(*stored));
 
-                if (store(list, *var, vars[1], stored)) {
+                if (store(d, vars[1], *var, stored)) {
                     res = long_to_string(*stored);
                 } else {
                     res = "undefined";
@@ -198,12 +198,12 @@ char* command_store(int num_args, char** vars, key_list* list) {
  * @return the stored variable at the given name if there is one 
  *         if there isn't one returns "undefined" 
  */
-char* command_query(int num_args, char** vars, key_list* list) {
+char* command_query(int num_args, char** vars, node* d) {
     char* res;
     int *stored;
 
     stored = malloc(sizeof(*stored));
-    if (query(list, stored, vars[1])) {
+    if (query(d, stored, vars[1])) {
         res = long_to_string(*stored);
         set_error("success","");
     } else {

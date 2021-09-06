@@ -7,10 +7,14 @@ struct node {
     char* key;
     int value;
     node *next;
-}
+};
 
-// #define CAPACITY 50
-//
+node* allocate_list();
+int store(node* list, char* key, int value, int* ptr);
+int query(node* list, int* ptr, char* key);
+
+// #define CAPACITY 2
+// 
 // typedef struct {
 //     char* key;
 //     int value;
@@ -34,6 +38,6 @@ struct node {
 // 
 // int is_dict_full(dict* d);
 // void store(dict* d, char* key, int value);
-// int query(dict* d, char* key, int* ptr);
+// int query(dict* d, int* ptr, char* key);
 
 #endif

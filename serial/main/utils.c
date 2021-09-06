@@ -52,7 +52,7 @@ int parse_int(char* str, int* ptr) {
  *          of x 
  */
 char* long_to_string(long x) {
-    static char buffer[17];
+    static char buffer[11];
 
     snprintf(buffer, 10, "%ld", x);
     return buffer;
