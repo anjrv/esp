@@ -11,38 +11,51 @@ key_list* new_list() {
     return res;
 }
 
+void free_item(key_value* item) {
+    free(item->key);
+    free(item);
+}
+
 void free_list(key_list* collection) {
     if (collection == NULL) {
         return;
     }
 
     for (size_t i = 0; i < collection->count; i++) {
-        free(collection->pairs[i].key);
+        free_item(collection->pairs[i]);
     }
 
     free(collection);
 }
 
-int store(key_list* collection, int value, char* key) {
-    // Need to make this iterate through and find the key
-    // TODO
-
-    if (collection->count == CAPACITY) {
-        return 0;
+int store(key_list* collection, int value, char* key, int* ptr) {
+    // Replace
+    for (size_t i = 0; i < collection->count; i++) {
+        if(strcmp(collection->pairs[i]->key, key) == 0) {
+            *ptr = collection->pairs[i]->value;
+            collection->pairs[i]->value = value;
+            
+            return 1;
+        }
     }
 
+    // Allocate
+    key_value* item = (key_value*) malloc (sizeof(key_value));
+    item->value = value;
+    item->key = (char*) malloc (strlen(key) + 1);
+    strcpy(item->key, key);
+
     int count = collection->count;
-    collection->pairs[count].key = strdup(key);
-    collection->pairs[count].value = value;
+    collection->pairs[count] = item;
     collection->count++;
 
-    return 1;
+    return 0;
 }
 
 int query(key_list* collection, int* ptr, char* key) {
     for (size_t i = 0; i < collection->count; i++) {
-        if(strcmp(collection->pairs[i].key, key) == 0) {
-            *ptr = collection->pairs[i].value;
+        if(strcmp(collection->pairs[i]->key, key) == 0) {
+            *ptr = collection->pairs[i]->value;
 
             return 1;
         }

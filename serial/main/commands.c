@@ -164,19 +164,19 @@ char* command_store(int num_args, char** vars, key_list* list) {
                 int *stored;
                 stored = malloc(sizeof(*stored));
 
-                if (query(list, stored, vars[1])) {
+                if (store(list, *var, vars[1], stored)) {
                     res = long_to_string(*stored);
                 } else {
                     res = "undefined";
                 }
-
-                store(list, *var, vars[1]);
 
                 free(stored);
                 free(var);
                 set_error("success", "");
                 return res;
             }
+
+            free(var);
         }
     }
 

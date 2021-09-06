@@ -1,23 +1,23 @@
 #ifndef DICT_H_ 
 #define DICT_H_ 
 
-#define CAPACITY 50
-
 typedef struct {
     char* key;
     int value;
 } key_value;
 
 typedef struct {
-    key_value pairs[CAPACITY];
+    key_value** pairs;
+    size_t capacity;
     size_t count;
 } key_list;
 
 key_list* new_list();
 void free_list(key_list* collection);
-int store(key_list* collection, int value, char* key);
+int store(key_list* collection, int value, char* key, int* ptr);
 int query(key_list* collection, int* ptr, char* key);
 
+// #define CAPACITY 50
 //
 // typedef struct {
 //     char* key;
