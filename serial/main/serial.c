@@ -38,7 +38,7 @@ void serial_out(const char* string) {
  * respond(..) provides routing for the given query string 
  * Sends out the outcome of the command + argument combination
  */
-void respond(char* q, stack *pt, key_list* list) {
+void respond(char* q, stack *pt, dict* d) {
 	// Split query on single space ' ' delimiter
 	char** split = string_split(q, " ");
 
@@ -65,9 +65,9 @@ void respond(char* q, stack *pt, key_list* list) {
 		} else if (strcmp(command, "ERROR") == 0) {
 			serial_out(get_error());
 		} else if (strcmp(command, "STORE") == 0) {
-			serial_out(command_store(i, split, list));
+			serial_out(command_store(i, split, d));
 		} else if (strcmp(command, "QUERY") == 0) {
-			serial_out(command_query(i, split, list));
+			serial_out(command_query(i, split, d));
 		} else if (strcmp(command, "PUSH") == 0) {
 			serial_out(command_push(i, split, pt));
 		} else if (strcmp(command, "POP") == 0) {
@@ -109,10 +109,8 @@ void app_main(void)
 	//
 	// For dict capacity can be changed in
 	// dict.h
-	// dict* d = create_dict(CAPACITY); 
-
+	dict* d = create_dict(CAPACITY); 
 	stack *pt = create_stack(STACK_SIZE);
-	key_list *list = new_list();
 
 	while (true) {
 		int complete = 0;
@@ -137,7 +135,7 @@ void app_main(void)
 			}
 		}
 
-		respond(query, pt, list);
+		respond(query, pt, d);
 		serial_out("");
 	}
 }
