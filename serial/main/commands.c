@@ -26,7 +26,7 @@
 // index for vars
 
 // Non local variables
-char error[MSG_BUFFER_LENGTH] = "no command history";
+char err_msg[MSG_BUFFER_LENGTH] = "no history";
 char mac_addr[18] = { 0 };
 char version[6] = { 0 };
 
@@ -37,14 +37,14 @@ char version[6] = { 0 };
  * @param command   the name of the previous command
  */
 void set_error(char* status, char* command) {
-    memset(error, 0, MSG_BUFFER_LENGTH);
+    memset(err_msg, 0, MSG_BUFFER_LENGTH);
 
     if (strcmp(command, "") == 0) {
-        strcpy(error, status);
+        strcpy(err_msg, status);
     } else {
-        strcat(error, command);
-        strcat(error, ": ");
-        strcat(error, status);
+        strcat(err_msg, status);
+        strcat(err_msg, " on command - ");
+        strcat(err_msg, command);
     }
 }
 
@@ -54,7 +54,7 @@ void set_error(char* status, char* command) {
  * @return the error state of the previous command (if there was one)
  */
 char* get_error() {
-   return error; 
+   return err_msg; 
 }
 
 /**
@@ -143,16 +143,16 @@ int validate_name(char* key) {
 /**
  * Stores a signed 32-bit integer onto the device dictionary
  * 
- * @param num_args  number of delimiter split inputs
- * @param vars      the query variables provided to the device
- * @param d         the dictionary currently in use by the device,
- *                  this is initialized in the main function
- *                  in serial.c
+ * @param num_args   number of delimiter split inputs
+ * @param vars       the query variables provided to the device
+ * @param dictionary the dictionary currently in use by the device,
+ *                   this is initialized in the main function
+ *                   in serial.c
  * 
  * @return the previously stored variable if there was one
  *         if there wasn't one returns "undefined" 
  */
-char* command_store(int num_args, char** vars, dict* d) {
+char* command_store(int num_args, char** vars, dict* dictionary) {
     char* res;
 
     if (num_args > 2 && strlen(vars[1]) <= 16) {
@@ -164,13 +164,13 @@ char* command_store(int num_args, char** vars, dict* d) {
                 int *stored;
                 stored = malloc(sizeof(*stored));
 
-                if (query(d, vars[1], stored)) {
+                if (query(dictionary, vars[1], stored)) {
                     res = long_to_string(*stored);
                 } else {
                     res = "undefined";
                 }
 
-                store(d, vars[1], *var);
+                store(dictionary, vars[1], *var);
                 free(stored);
                 free(var);
                 set_error("success", "");
@@ -183,33 +183,33 @@ char* command_store(int num_args, char** vars, dict* d) {
 
     // Insufficient arguments given or invalid name
     res = "argument error";
-    set_error("argument error", "store");
+    set_error("error: invalid argument", "store");
     return res;
 }
 
 /**
  * Fetches a signed 32-bit integer from the device dictionary
  * 
- * @param num_args  number of delimiter split inputs
- * @param vars      the query variables provided to the device
- * @param d         the dictionary currently in use by the device,
- *                  this is initialized in the main function
- *                  in serial.c
+ * @param num_args   number of delimiter split inputs
+ * @param vars       the query variables provided to the device
+ * @param dictionary the dictionary currently in use by the device,
+ *                   this is initialized in the main function
+ *                   in serial.c
  * 
  * @return the stored variable at the given name if there is one 
  *         if there isn't one returns "undefined" 
  */
-char* command_query(int num_args, char** vars, dict* d) {
+char* command_query(int num_args, char** vars, dict* dictionary) {
     char* res;
     int *stored;
 
     stored = malloc(sizeof(*stored));
-    if (query(d, vars[1], stored)) {
+    if (query(dictionary, vars[1], stored)) {
         res = long_to_string(*stored);
         set_error("success","");
     } else {
         res = "undefined";
-        set_error("undefined", "query");
+        set_error("error: undefined variable", "query");
     }
 
     free(stored);
@@ -219,20 +219,20 @@ char* command_query(int num_args, char** vars, dict* d) {
 /**
  * If there is space, pushes a signed 32-bit integer on to the device stack
  * 
- * @param num_args  number of delimiter split inputs
- * @param vars      the query variables provided to the device
- * @param pt        the stack currently in use by the device,
- *                  this is initialized in the main function
- *                  in serial.c
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ * @param stack_pointer the stack currently in use by the device,
+ *                      this is initialized in the main function
+ *                      in serial.c
  * 
  * @return "done" if the push succeeds, an error state otherwise 
  */
-char* command_push(int num_args, char** vars, stack *pt) {
+char* command_push(int num_args, char** vars, stack *stack_pointer) {
     if (num_args < 2) {
-        set_error("argument error", "push");
+        set_error("error: invalid argument", "push");
         return "argument error";
-    } else if (is_stack_full(pt)) {
-        set_error("overflow", "push");
+    } else if (is_stack_full(stack_pointer)) {
+        set_error("error: stack overflow", "push");
         return "overflow";
     }
 
@@ -240,14 +240,14 @@ char* command_push(int num_args, char** vars, stack *pt) {
     res = malloc(sizeof(*res));
 
     if (parse_int(vars[1], res)) {
-        push(pt, *res);
+        push(stack_pointer, *res);
         free(res);
         set_error("success","");
         return "done";
     }
 
     // Catchall return for NaN
-    set_error("argument error", "push");
+    set_error("error: invalid argument", "push");
     return "argument error";
 }
 
@@ -258,17 +258,17 @@ char* command_push(int num_args, char** vars, stack *pt) {
  * If two valid defined values are given the function returns the outcome
  * of adding those t wo values together
  *  
- * @param num_args  number of delimiter split inputs
- * @param vars      the query variables provided to the device
- * @param pt        the stack currently in use by the device,
- *                  this is initialized in the main function
- *                  in serial.c
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ * @param stack_pointer stack currently in use by the device,
+ *                      this is initialized in the main function
+ *                      in serial.c
  * 
  * @return the outcome of the calculation if valid values are found 
  */
-char* command_add(int num_args, char** vars, stack *pt) {
+char* command_add(int num_args, char** vars, stack *stack_pointer) {
     if (num_args < 2) {
-        set_error("undefined", "add");
+        set_error("error: undefined variable", "add");
         return "undefined";
     } 
 
@@ -281,7 +281,7 @@ char* command_add(int num_args, char** vars, stack *pt) {
 
         if (num_args > 2) {
             if (!parse_int(vars[2], var2)) {
-                set_error("argument error", "add");
+                set_error("error: invalid argument", "add");
                 return "argument error";
             }
 
@@ -291,8 +291,8 @@ char* command_add(int num_args, char** vars, stack *pt) {
             free(var1);
             free(var2);
             return res;   
-        } else if (!is_stack_empty(pt)) {
-            *var2 = peek(pt);
+        } else if (!is_stack_empty(stack_pointer)) {
+            *var2 = peek(stack_pointer);
             char* res = long_to_string(*var1 + *var2);
 
             free(var1);
@@ -301,11 +301,11 @@ char* command_add(int num_args, char** vars, stack *pt) {
             return res;   
         }
     } else {
-        set_error("argument error", "add");
+        set_error("error: invalid argument", "add");
         return "argument error";
     }
 
-    set_error("undefined", "add");
+    set_error("error: undefined variable", "add");
     return "undefined";
 }
 
@@ -314,20 +314,20 @@ char* command_add(int num_args, char** vars, stack *pt) {
  * and returns the value. If there are no values left on the stack
  * the function returns "undefined"
  * 
- * @param num_args  number of delimiter split inputs
- * @param pt        the stack currently in use by the device,
- *                  this is initialized in the main function
- *                  in serial.c
+ * @param num_args      number of delimiter split inputs
+ * @param stack_pointer the stack currently in use by the device,
+ *                      this is initialized in the main function
+ *                      in serial.c
  * 
  * @return the value if the pop succeeds, an error state otherwise
  */
-char* command_pop(stack *pt) {
-    if (is_stack_empty(pt)) {
-        set_error("undefined", "pop");
+char* command_pop(stack *stack_pointer) {
+    if (is_stack_empty(stack_pointer)) {
+        set_error("error: stack was empty", "pop");
         return "undefined";
     } 
 
-    int val  = pop(pt);
+    int val  = pop(stack_pointer);
     char* res = long_to_string(val);
 
     set_error("success", "");

@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -38,11 +38,10 @@ void serial_out(const char* string) {
  * respond(..) provides routing for the given query string 
  * Sends out the outcome of the command + argument combination
  */
-void respond(char* q, stack *pt, dict* d) {
+void respond(char* q, stack *stack_pointer, dict* dictionary) {
 	// Split query on single space ' ' delimiter
 	char** split = string_split(q, " ");
 
-	int i = 0;
 	// Count query entries (command + arguments)
 	for(; split[i] != NULL; ++i) { }
 
@@ -65,23 +64,23 @@ void respond(char* q, stack *pt, dict* d) {
 		} else if (strcmp(command, "ERROR") == 0) {
 			serial_out(get_error());
 		} else if (strcmp(command, "STORE") == 0) {
-			serial_out(command_store(i, split, d));
+			serial_out(command_store(i, split, dictionary));
 		} else if (strcmp(command, "QUERY") == 0) {
-			serial_out(command_query(i, split, d));
+			serial_out(command_query(i, split, dictionary));
 		} else if (strcmp(command, "PUSH") == 0) {
-			serial_out(command_push(i, split, pt));
+			serial_out(command_push(i, split, stack_pointer));
 		} else if (strcmp(command, "POP") == 0) {
-			serial_out(command_pop(pt));
+			serial_out(command_pop(stack_pointer));
 		} else if (strcmp(command, "ADD") == 0) {
-			serial_out(command_add(i, split, pt));
+			serial_out(command_add(i, split, stack_pointer));
 		} else {
 			// Default case, command does not exist
-			set_error("command error", "");
+			set_error("error: invalid command", "");
 			serial_out("command error");
 		}
 	} else {
 		// No command input
-		set_error("command error", "");
+		set_error("error: invalid command", "");
 		serial_out("command error");
 	}
 
@@ -109,20 +108,28 @@ void app_main(void)
 	//
 	// For dict capacity can be changed in
 	// dict.h
-	dict* d = create_dict(CAPACITY); 
-	stack *pt = create_stack(STACK_SIZE);
+	dict* dictionary = create_dict(CAPACITY); 
+	stack *stack_pointer = create_stack(STACK_SIZE);
 
 	while (true) {
 		int complete = 0;
 		int at = 0;
+		int consecutive_whitespace = 0;
+
 		memset(query, 0, MSG_BUFFER_LENGTH);
 
 		while (!complete) {
 			if (at >= 256) {
-				// Error: Input too long.
+				serial_out("error: input length exceeded");
 				break;
 			}
 			int result = fgetc(stdin);
+
+			if (at == 0 && ((char)result == ' ' || (char)result == '\t')) {
+				serial_out("error: leading whitespace");
+				break;
+			}
+
 			if (result == EOF) {
 				vTaskDelay(read_delay);
 				continue;
@@ -133,9 +140,28 @@ void app_main(void)
 			else {
 				query[at++] = (char)result;
 			}
+
+			if ((char)result == ' ' || (char)result == '\t') {
+				if (complete && consecutive_whitespace) {
+					serial_out("error: trailing whitespace");
+					complete = false;
+					break;
+				} else if (consecutive_whitespace) {
+					serial_out("error: consecutive whitespace");
+					complete = false;
+					break;
+				} 
+
+				consecutive_whitespace = 1;
+			} else {
+				consecutive_whitespace = 0;
+			}
 		}
 
-		respond(query, pt, d);
+		if (complete) { 
+			respond(query, stack_pointer, dictionary);
+		}
+
 		serial_out("");
 	}
 }

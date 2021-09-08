@@ -100,7 +100,6 @@ void handle_collision(dict* d, unsigned long index, dict_item* item) {
 unsigned long hash_function(char* str) {
     unsigned long i = 0;
     for (int j=0; str[j]; j++)
-        // Small prime of 31
         i = (31 * i + str[j]);
     
     return i % CAPACITY;
