@@ -1,3 +1,4 @@
 esp-idf/
 **/build
 **/.vscode
+**/.cache
