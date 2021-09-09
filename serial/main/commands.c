@@ -53,7 +53,7 @@ void set_error(char* status, char* command) {
  * 
  * @return the error state of the previous command (if there was one)
  */
-char* get_error() {
+char* get_error(int num_args) {
    return err_msg; 
 }
 
@@ -62,7 +62,7 @@ char* get_error() {
  * 
  * @return "pong"
  */
-char* command_ping() {
+char* command_ping(int num_args) {
     set_error("success", "");
     return "pong";
 }
@@ -73,7 +73,7 @@ char* command_ping() {
  * 
  * @return the mac address of the device
  */
-char* command_mac() {
+char* command_mac(int num_args) {
     uint8_t mac[6];
     esp_efuse_mac_get_default(mac);
     sprintf(
@@ -96,7 +96,7 @@ char* command_mac() {
  * 
  * @return the id of the developer
  */
-char* command_id() {
+char* command_id(int num_args) {
     set_error("success", "");
     return DEVELOPER_ID;
 }
@@ -107,7 +107,7 @@ char* command_id() {
  * 
  * @return the firmware version of the device 
  */
-char* command_version() {
+char* command_version(int num_args) {
     sprintf(
         version,
         "%d.%d.%d",
@@ -321,7 +321,7 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
  * 
  * @return the value if the pop succeeds, an error state otherwise
  */
-char* command_pop(stack *stack_pointer) {
+char* command_pop(int num_args, stack *stack_pointer) {
     if (is_stack_empty(stack_pointer)) {
         set_error("error: stack was empty", "pop");
         return "undefined";

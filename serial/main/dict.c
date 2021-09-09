@@ -4,11 +4,23 @@
 
 #include "dict.h"
 
+/**
+ * Function used to allocate memory for an overflow linked list
+ * 
+ * @return a new memory allocated linked list pointer
+ */
 static linked_list* allocate_list() {
     linked_list* list = (linked_list*) malloc (sizeof(linked_list));
     return list;
 }
 
+/**
+ * Function used to insert a dictionary item into a linked list
+ * 
+ * @param list the linked list to insert into
+ * @param item the dictionary item to insert
+ * @return the updated list 
+ */
 static linked_list* list_insert(linked_list* list, dict_item* item) {
     if (!list) {
         linked_list* head = allocate_list();
@@ -38,6 +50,11 @@ static linked_list* list_insert(linked_list* list, dict_item* item) {
     return list;
 }
 
+/**
+ * Function to free the memory allocation of a linked list
+ * 
+ * @param list the list to free 
+ */
 static void free_list(linked_list* list) {
     linked_list* temp = list;
     while (list) {
@@ -50,6 +67,12 @@ static void free_list(linked_list* list) {
     }
 }
 
+/**
+ * Function used to create overflow linked lists for a dictionary
+ * 
+ * @param d the dictionary to allocate the linked lists for
+ * @return the start pointer of the list of pointers for the allocated linked lists 
+ */
 static linked_list** create_overflow(dict* d) {
     linked_list** buckets = (linked_list**) calloc (d->size, sizeof(linked_list*));
     for (int i=0; i<d->size; i++) {
@@ -59,6 +82,11 @@ static linked_list** create_overflow(dict* d) {
     return buckets;
 }
 
+/**
+ * Function used to free the overflow linked lists of a dictionary
+ * 
+ * @param d the dictionary to free the overflow linked lists from
+ */
 static void free_overflow(dict* d) {
     linked_list** buckets = d->overflow;
     for (int i=0; i<d->size; i++) {

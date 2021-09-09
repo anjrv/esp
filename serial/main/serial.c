@@ -42,37 +42,37 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 	// Split query on single space ' ' delimiter
 	char** split = string_split(q, " ");
 
-	// Count query entries (command + arguments)
-	for(; split[i] != NULL; ++i) { }
+	int quant = 0;
+	for(; split[quant] != NULL; ++quant) { }
 
 	// If there are no words present then
 	// we skip searching for a command entirely
-	if (i > 0) {
+	if (quant > 0) {
 		// Cast command to uppercase to remove
 		// Case sensitivity
 		char* command = strupr(split[0]);
 
 		// "Switch" through available commands
 		if (strcmp(command, "PING") == 0) {
-			serial_out(command_ping());
+			serial_out(command_ping(quant));
 		} else if (strcmp(command, "MAC") == 0) {
-			serial_out(command_mac());
+			serial_out(command_mac(quant));
 		} else if (strcmp(command, "ID") == 0 ) {
-			serial_out(command_id());
+			serial_out(command_id(quant));
 		} else if (strcmp(command, "VERSION") == 0) {
-			serial_out(command_version());
+			serial_out(command_version(quant));
 		} else if (strcmp(command, "ERROR") == 0) {
-			serial_out(get_error());
+			serial_out(get_error(quant));
 		} else if (strcmp(command, "STORE") == 0) {
-			serial_out(command_store(i, split, dictionary));
+			serial_out(command_store(quant, split, dictionary));
 		} else if (strcmp(command, "QUERY") == 0) {
-			serial_out(command_query(i, split, dictionary));
+			serial_out(command_query(quant, split, dictionary));
 		} else if (strcmp(command, "PUSH") == 0) {
-			serial_out(command_push(i, split, stack_pointer));
+			serial_out(command_push(quant, split, stack_pointer));
 		} else if (strcmp(command, "POP") == 0) {
-			serial_out(command_pop(stack_pointer));
+			serial_out(command_pop(quant, stack_pointer));
 		} else if (strcmp(command, "ADD") == 0) {
-			serial_out(command_add(i, split, stack_pointer));
+			serial_out(command_add(quant, split, stack_pointer));
 		} else {
 			// Default case, command does not exist
 			set_error("error: invalid command", "");
@@ -83,8 +83,6 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 		set_error("error: invalid command", "");
 		serial_out("command error");
 	}
-
-	free(split);
 }
 
 /**
@@ -125,7 +123,7 @@ void app_main(void)
 			}
 			int result = fgetc(stdin);
 
-			if (at == 0 && ((char)result == ' ' || (char)result == '\t')) {
+			if (at == 0 && ((char)result == ' ')) {
 				serial_out("error: leading whitespace");
 				break;
 			}
@@ -141,7 +139,7 @@ void app_main(void)
 				query[at++] = (char)result;
 			}
 
-			if ((char)result == ' ' || (char)result == '\t') {
+			if ((char)result == ' ') {
 				if (complete && consecutive_whitespace) {
 					serial_out("error: trailing whitespace");
 					complete = false;
