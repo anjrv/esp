@@ -54,15 +54,15 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 
 		// "Switch" through available commands
 		if (strcmp(command, "PING") == 0) {
-			serial_out(command_ping(quant));
+			serial_out(command_ping());
 		} else if (strcmp(command, "MAC") == 0) {
-			serial_out(command_mac(quant));
+			serial_out(command_mac());
 		} else if (strcmp(command, "ID") == 0 ) {
-			serial_out(command_id(quant));
+			serial_out(command_id());
 		} else if (strcmp(command, "VERSION") == 0) {
-			serial_out(command_version(quant));
+			serial_out(command_version());
 		} else if (strcmp(command, "ERROR") == 0) {
-			serial_out(get_error(quant));
+			serial_out(get_error());
 		} else if (strcmp(command, "STORE") == 0) {
 			serial_out(command_store(quant, split, dictionary));
 		} else if (strcmp(command, "QUERY") == 0) {

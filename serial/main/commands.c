@@ -53,7 +53,7 @@ void set_error(char* status, char* command) {
  * 
  * @return the error state of the previous command (if there was one)
  */
-char* get_error(int num_args) {
+char* get_error() {
    return err_msg; 
 }
 
@@ -62,7 +62,7 @@ char* get_error(int num_args) {
  * 
  * @return "pong"
  */
-char* command_ping(int num_args) {
+char* command_ping() {
     set_error("success", "");
     return "pong";
 }
@@ -73,7 +73,7 @@ char* command_ping(int num_args) {
  * 
  * @return the mac address of the device
  */
-char* command_mac(int num_args) {
+char* command_mac() {
     uint8_t mac[6];
     esp_efuse_mac_get_default(mac);
     sprintf(
@@ -96,7 +96,7 @@ char* command_mac(int num_args) {
  * 
  * @return the id of the developer
  */
-char* command_id(int num_args) {
+char* command_id() {
     set_error("success", "");
     return DEVELOPER_ID;
 }
@@ -107,7 +107,7 @@ char* command_id(int num_args) {
  * 
  * @return the firmware version of the device 
  */
-char* command_version(int num_args) {
+char* command_version() {
     sprintf(
         version,
         "%d.%d.%d",
