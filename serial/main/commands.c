@@ -168,10 +168,17 @@ char* command_store(int num_args, char** vars, dict* dictionary) {
                     res = "undefined";
                 }
 
-                store(dictionary, vars[1], *var);
+                if (!is_dict_full(dictionary)) {
+                    store(dictionary, vars[1], *var);
+                    set_error("success", "");
+                } else {
+                    set_error("error: storage full", "store");
+                    res = "storage exceeded";
+                }
+
+
                 free(stored);
                 free(var);
-                set_error("success", "");
                 return res;
             }
 

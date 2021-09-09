@@ -52,45 +52,8 @@ int parse_int(char* str, int* ptr) {
  *          of x 
  */
 char* long_to_string(long x) {
-    static char buffer[17];
+    static char buffer[20];
 
     snprintf(buffer, 10, "%ld", x);
     return buffer;
-}
-
-/**
- * Splits a given query char** into multiple char*
- * elements using the given delim argument
- * 
- * NOTE: Used for serial query parsing,
- *       should not be used in parallel
- *       due to static storage
- * 
- *       Should be turned into a void with a char**
- *       param if we later add something like
- *       piping delimiters
- * 
- * @param   query the char* to be split
- * @param   delim the delimiters to be used when splitting
- * @return  char** pointer to the start of the split char*
- */
-char** string_split(char* query, char* delim) {
-    static char store[MSG_BUFFER_LENGTH];
-	strcpy(store, query);
-
-    char** res = NULL;
-    char* p = strtok(store, delim);
-    int space = 0;
-
-    while(p) {
-        res = realloc(res, sizeof(char*) * ++space);
-        res[space-1] = p;
-
-        p = strtok(NULL, delim);
-    }
-
-    res = realloc(res, sizeof(char*) * (space+1));
-    res[space] = '\0';
-
-    return res;
 }

@@ -39,14 +39,22 @@ void serial_out(const char* string) {
  * Sends out the outcome of the command + argument combination
  */
 void respond(char* q, stack *stack_pointer, dict* dictionary) {
-	// Split query on single space ' ' delimiter
-	char** split = string_split(q, " ");
+	char** split = NULL;
+	char* p = strtok(q, " ");
+    int quant = 0;
 
-	int quant = 0;
-	for(; split[quant] != NULL; ++quant) { }
+    while(p) {
+        split = realloc(split, sizeof(char*) * ++quant);
+        split[quant-1] = p;
+
+        p = strtok(NULL, " ");
+    }
+
+    split = realloc(split, sizeof(char*) * (quant+1));
+    split[quant] = '\0';
 
 	// If there are no words present then
-	// we skip searching for a command entirely
+	// we skip searching for a command
 	if (quant > 0) {
 		// Cast command to uppercase to remove
 		// Case sensitivity
@@ -75,14 +83,14 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 			serial_out(command_add(quant, split, stack_pointer));
 		} else {
 			// Default case, command does not exist
-			set_error("error: invalid command", "");
 			serial_out("command error");
 		}
 	} else {
 		// No command input
-		set_error("error: invalid command", "");
 		serial_out("command error");
 	}
+
+	free(split);
 }
 
 /**
@@ -112,52 +120,56 @@ void app_main(void)
 	while (true) {
 		int complete = 0;
 		int at = 0;
+		int whitespace = 0;
 		int consecutive_whitespace = 0;
+		int leading_whitespace = 0;
+		int trailing_whitespace = 0;
 
 		memset(query, 0, MSG_BUFFER_LENGTH);
 
 		while (!complete) {
 			if (at >= 256) {
-				serial_out("error: input length exceeded");
+				serial_out("input length exceeded");
 				break;
 			}
 			int result = fgetc(stdin);
 
 			if (at == 0 && ((char)result == ' ')) {
-				serial_out("error: leading whitespace");
-				break;
+				leading_whitespace = 1;
 			}
 
 			if (result == EOF) {
 				vTaskDelay(read_delay);
 				continue;
-			}
-			else if ((char)result == '\n') {
+			} else if ((char)result == '\n') {
+				if (whitespace) {
+					trailing_whitespace = 1;
+				}
+
 				complete = true;
-			}
-			else {
+			} else {
 				query[at++] = (char)result;
 			}
 
 			if ((char)result == ' ') {
-				if (complete && consecutive_whitespace) {
-					serial_out("error: trailing whitespace");
-					complete = false;
-					break;
-				} else if (consecutive_whitespace) {
-					serial_out("error: consecutive whitespace");
-					complete = false;
-					break;
-				} 
-
-				consecutive_whitespace = 1;
+				if (whitespace) {
+					consecutive_whitespace = 1;
+				}
+				whitespace = 1;
 			} else {
-				consecutive_whitespace = 0;
+				whitespace = 0;
 			}
+
 		}
 
-		if (complete) { 
-			respond(query, stack_pointer, dictionary);
+		if (complete) {
+			if (leading_whitespace) {
+				serial_out("command error");
+			} else if (consecutive_whitespace || trailing_whitespace) {
+				serial_out("argument error");
+			} else {
+				respond(query, stack_pointer, dictionary);
+			}
 		}
 
 		serial_out("");
