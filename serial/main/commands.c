@@ -269,7 +269,11 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
     if (num_args < 2) {
         set_error("error: undefined variable", "add");
         return "undefined";
-    } 
+    }
+
+    if (num_args > 3) {
+        return "argument error";
+    }
 
     int *var1;
     var1 = malloc(sizeof(*var1));
@@ -278,7 +282,7 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
-        if (num_args > 2 && num_args < 4) {
+        if (num_args > 2) {
             if (!parse_int(vars[2], var2)) {
                 return "argument error";
             }
