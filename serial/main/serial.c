@@ -70,7 +70,7 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 		} else if (strcmp(command, "PUSH") == 0) {
 			serial_out(command_push(quant, split, stack_pointer));
 		} else if (strcmp(command, "POP") == 0) {
-			serial_out(command_pop(quant, stack_pointer));
+			serial_out(command_pop(stack_pointer));
 		} else if (strcmp(command, "ADD") == 0) {
 			serial_out(command_add(quant, split, stack_pointer));
 		} else {

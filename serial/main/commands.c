@@ -122,9 +122,7 @@ char* command_version() {
 
 int validate_name(char* key) {
     regex_t re;
-
     const char* pattern = "[a-zA-Z_]+";
-    // "[a-z_A-Z]{1,16} refuses to check count??
     
     if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
         return 0;
@@ -155,7 +153,7 @@ int validate_name(char* key) {
 char* command_store(int num_args, char** vars, dict* dictionary) {
     char* res;
 
-    if (num_args > 2 && strlen(vars[1]) <= 16) {
+    if (num_args == 3 && strlen(vars[1]) <= 16) {
         if (validate_name(vars[1])) {
             int *var;
             var = malloc(sizeof(*var));
@@ -181,9 +179,7 @@ char* command_store(int num_args, char** vars, dict* dictionary) {
         }
     }
 
-    // Insufficient arguments given or invalid name
     res = "argument error";
-    set_error("error: invalid argument", "store");
     return res;
 }
 
@@ -201,18 +197,24 @@ char* command_store(int num_args, char** vars, dict* dictionary) {
  */
 char* command_query(int num_args, char** vars, dict* dictionary) {
     char* res;
-    int *stored;
 
-    stored = malloc(sizeof(*stored));
-    if (query(dictionary, vars[1], stored)) {
-        res = long_to_string(*stored);
-        set_error("success","");
-    } else {
-        res = "undefined";
-        set_error("error: undefined variable", "query");
+    if (num_args == 2) {
+        int *stored;
+
+        stored = malloc(sizeof(*stored));
+        if (query(dictionary, vars[1], stored)) {
+            res = long_to_string(*stored);
+            set_error("success","");
+        } else {
+            res = "undefined";
+            set_error("error: undefined variable", "query");
+        }
+
+        free(stored);
+        return res;
     }
 
-    free(stored);
+    res = "argument error";
     return res;
 }
 
@@ -228,26 +230,23 @@ char* command_query(int num_args, char** vars, dict* dictionary) {
  * @return "done" if the push succeeds, an error state otherwise 
  */
 char* command_push(int num_args, char** vars, stack *stack_pointer) {
-    if (num_args < 2) {
-        set_error("error: invalid argument", "push");
+    if (num_args != 2) {
         return "argument error";
     } else if (is_stack_full(stack_pointer)) {
         set_error("error: stack overflow", "push");
         return "overflow";
     }
 
-    int *res;
-    res = malloc(sizeof(*res));
+    int *value;
+    value = malloc(sizeof(*value));
 
-    if (parse_int(vars[1], res)) {
-        push(stack_pointer, *res);
-        free(res);
+    if (parse_int(vars[1], value)) {
+        push(stack_pointer, *value);
+        free(value);
         set_error("success","");
         return "done";
     }
 
-    // Catchall return for NaN
-    set_error("error: invalid argument", "push");
     return "argument error";
 }
 
@@ -279,9 +278,8 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
-        if (num_args > 2) {
+        if (num_args > 2 && num_args < 4) {
             if (!parse_int(vars[2], var2)) {
-                set_error("error: invalid argument", "add");
                 return "argument error";
             }
 
@@ -291,7 +289,12 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
             free(var1);
             free(var2);
             return res;   
-        } else if (!is_stack_empty(stack_pointer)) {
+        } else if (is_stack_empty(stack_pointer)) {
+            free(var1);
+            free(var2);
+            set_error("error: undefined variable, stack is empty", "add");
+            return "undefined";
+        } else {
             *var2 = peek(stack_pointer);
             char* res = long_to_string(*var1 + *var2);
 
@@ -301,7 +304,6 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
             return res;   
         }
     } else {
-        set_error("error: invalid argument", "add");
         return "argument error";
     }
 
@@ -321,9 +323,9 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
  * 
  * @return the value if the pop succeeds, an error state otherwise
  */
-char* command_pop(int num_args, stack *stack_pointer) {
+char* command_pop(stack *stack_pointer) {
     if (is_stack_empty(stack_pointer)) {
-        set_error("error: stack was empty", "pop");
+        set_error("error: undefined variable, stack is empty", "pop");
         return "undefined";
     } 
 
