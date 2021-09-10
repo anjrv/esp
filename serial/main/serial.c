@@ -90,6 +90,8 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 		serial_out("command error");
 	}
 
+	// I assume the rule for realloc is the same as it is for malloc
+	// We realloced the split variable to fit our tokens, now we free it
 	free(split);
 }
 
