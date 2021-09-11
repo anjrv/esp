@@ -37,4 +37,3 @@
 * Argument and command errors do not set the error state, generally error states are reserved for when queries pass "first inspection".
 * The initial error state was chosen to be "no history". This is what the error command will return if no other commands have been used.
 * The maximum storage space of named variables is limited rather than being dynamically allocating memory infinitely. This was mostly done to be able to choose a faster data structure instead of something that would have to iterate over stored variables. ( Albeit linked lists with a skip list helper were considered )
-* I have not used C too much so an attempt was made to familiarize myself and make use of malloc and free as well as pointers, memory leaks may occur..
