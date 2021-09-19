@@ -1,4 +1,7 @@
-# File structure
+
+# Previous information
+
+## File structure
 
 **In general I went with a variant of the structure suggested in the assignment description.**
 
@@ -14,7 +17,7 @@
 * All .c files aside from the main serial.c have their corresponding header files for declaration
     - Not all functions are globally exposed such as the overflow linked lists that are exlusively used for the dictionary data structure
 
-# Response sequence and implementation
+## Response sequence and implementation
 
 * Input is read through a modified example of the serial program
     - Main changes made to the reading of the query string is the detection of excess whitespace and initialization of the implemented data structures (dictionary and stack)
@@ -29,7 +32,7 @@
     - Commands that do not take arguments will not trigger an argument error
     - Excess arguments to commands that do take arguments will trigger an argument error
 
-# Other implementation decisions
+## Other implementation decisions
 
 * Currently leading zeroes are allowed for all number inputs.
 * All integer parsing and formatting is done through the use of longs to easier detect overflow problems that would otherwise cause issues.
