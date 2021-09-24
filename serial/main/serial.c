@@ -9,9 +9,17 @@
 #include "utils.h"
 #include "commands.h"
 
+#define TASKS 8
+#define MAIN_PRIORITY 0
+#define LOW_PRIORITY 1
+#define HIGH_PRIORITY 4
 #define MSG_BUFFER_LENGTH 256
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
+dict* dictionary;
+stack* stack_pointer;
+char q[MSG_BUFFER_LENGTH];
+
 
 // serial_out(..) method assumes string is null-terminated but does not
 //	have the specification-mandated newline terminator.  This method applies
@@ -38,7 +46,7 @@ void serial_out(const char* string) {
  * respond(..) provides routing for the given query string 
  * Sends out the outcome of the command + argument combination
  */
-void respond(char* q, stack *stack_pointer, dict* dictionary) {
+void respond(void *pvParameter) {
 	char** split = NULL;
 	char* p = strtok(q, " ");
     int quant = 0;
@@ -93,31 +101,11 @@ void respond(char* q, stack *stack_pointer, dict* dictionary) {
 	// I assume the rule for realloc is the same as it is for malloc
 	// We realloced the split variable to fit our tokens, now we free it
 	free(split);
+	vTaskDelete(NULL); // Respond deletes itself when done
 }
 
-/**
- * Entry point main function
- * Reads in query string and validates length
- * 
- * If length is satisfied query string is
- * routed to the respond() function.
- */
-void app_main(void)
-{
+void main_task(void *pvParameter) {
 	serial_out("firmware ready");
-
-	char query[MSG_BUFFER_LENGTH];
-
-	// Note: DO NOT CHANGE THESE CAPACITY
-	// AND SIZE VARIABLES HERE
-	//
-	// For stack capacity can be changed in
-	// stack.h
-	//
-	// For dict capacity can be changed in
-	// dict.h
-	dict* dictionary = create_dict(CAPACITY); 
-	stack *stack_pointer = create_stack(STACK_SIZE);
 
 	while (true) {
 		int complete = 0;
@@ -127,7 +115,7 @@ void app_main(void)
 		int leading_whitespace = 0;
 		int trailing_whitespace = 0;
 
-		memset(query, 0, MSG_BUFFER_LENGTH);
+		memset(q, 0, MSG_BUFFER_LENGTH);
 
 		while (!complete) {
 			if (at >= 256) {
@@ -150,7 +138,7 @@ void app_main(void)
 
 				complete = true;
 			} else {
-				query[at++] = (char)result;
+				q[at++] = (char)result;
 			}
 
 			if ((char)result == ' ') {
@@ -170,10 +158,39 @@ void app_main(void)
 			} else if (consecutive_whitespace || trailing_whitespace) {
 				serial_out("argument error");
 			} else {
-				respond(query, stack_pointer, dictionary);
+				xTaskCreatePinnedToCore(
+					&respond,
+					"respond",
+					2048,
+					NULL,
+					HIGH_PRIORITY,
+					NULL,
+					tskNO_AFFINITY
+				);
 			}
 		}
 
 		serial_out("");
 	}
+}
+
+/**
+ * Entry point main function
+ * Reads in query string and validates length
+ * 
+ * If length is satisfied query string is
+ * routed to the respond() function.
+ */
+void app_main(void) {
+	dictionary = create_dict(DICT_CAPACITY);
+	stack_pointer = create_stack(STACK_CAPACITY);
+
+	xTaskCreate(
+		&main_task,
+		"main_task",
+		2048,
+		NULL,
+		MAIN_PRIORITY,
+		NULL
+	);
 }

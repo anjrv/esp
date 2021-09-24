@@ -130,7 +130,7 @@ unsigned long hash_function(char* str) {
     for (int j=0; str[j]; j++)
         i = (31 * i + str[j]);
     
-    return i % CAPACITY;
+    return i % DICT_CAPACITY;
 }
 
 /**

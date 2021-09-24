@@ -1,7 +1,7 @@
 #ifndef STACK_H_
 #define STACK_H_ 
 
-#define STACK_SIZE 32
+#define STACK_CAPACITY 32
 
 typedef struct {
     int maxsize;    
