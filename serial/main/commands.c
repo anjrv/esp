@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "serial.h"
 #include "commands.h"
+#include "factors.h"
 
 #define MSG_BUFFER_LENGTH 256
 
@@ -349,11 +350,37 @@ void command_result(int num_args, char** vars) {
 
 }
 
-void command_factor(int num_args, char** vars) {
-
-}
-
 /////////////////////////
 // BACKGROUND COMMANDS //
 /////////////////////////
 
+void command_factor(int num_args, char** vars, int counter, stack *stack_pointer, dict* dictionary) {
+    // Currently only really allocating for 99999 different id values
+    char id[8] = "id";
+    snprintf(id, 8, "id%d", counter);
+
+    int *var;
+    var = malloc(sizeof(*var));
+
+    if (num_args == 2) {
+        if (parse_int(vars[1], var) || query(dictionary, vars[1], var)) {
+            if(prepare_factor(*var, id)) {
+                serial_out(id);
+            } else {
+                serial_out("could not start task");
+                set_error("error: could not start task", "factor");
+            }
+        }
+    } else if (num_args < 2 && !is_stack_empty(stack_pointer)) {
+        *var = peek(stack_pointer);
+        if (prepare_factor(*var, id)) {
+            serial_out(id);
+        } else {
+            serial_out("could not start task");
+            set_error("error: could not start task", "factor");
+        }
+    } else {
+        set_error("error: undefined variable", "factor");
+        serial_out("undefined");
+    }
+}

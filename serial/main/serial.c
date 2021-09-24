@@ -8,16 +8,14 @@
 #include "dict.h"
 #include "utils.h"
 #include "commands.h"
+#include "factors.h"
 
-#define TASKS 8
-#define MAIN_PRIORITY 0
-#define LOW_PRIORITY 1
-#define HIGH_PRIORITY 4
 #define MSG_BUFFER_LENGTH 256
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 dict* dictionary;
 stack* stack_pointer;
+int counter;
 char q[MSG_BUFFER_LENGTH];
 
 
@@ -94,7 +92,7 @@ void respond(void *pvParameter) {
 		} else if (strcmp(command, "RESULT") == 0) {
 			command_result(quant, split);
 		} else if (strcmp(command, "FACTOR") == 0) {
-			command_factor(quant, split);
+			command_factor(quant, split, counter++, stack_pointer, dictionary);
 		} else {
 			// Default case, command does not exist
 			serial_out("command error");
@@ -190,6 +188,7 @@ void main_task(void *pvParameter) {
 void app_main(void) {
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
+	counter = 0;
 
     xTaskCreate(
         &main_task,    // - function ptr

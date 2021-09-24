@@ -11,10 +11,10 @@
  * @return a pointer to the newly made stack struct
  */
 stack* create_stack(int capacity) {
-    stack *pt = (stack*)malloc(sizeof(stack));
+    stack *pt = malloc(sizeof(stack));
     pt->maxsize = capacity;
     pt->top = -1;
-    pt->items = (int*)malloc(sizeof(int) * capacity);
+    pt->items = malloc(sizeof(int) * capacity);
  
     return pt;
 }

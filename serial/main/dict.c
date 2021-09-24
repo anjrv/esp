@@ -10,7 +10,7 @@
  * @return a new memory allocated linked list pointer
  */
 static linked_list* allocate_list() {
-    linked_list* list = (linked_list*) malloc (sizeof(linked_list));
+    linked_list* list = malloc (sizeof(linked_list));
     return list;
 }
 
@@ -141,8 +141,8 @@ int hash_function(char* str) {
  * @return a pointer to the newly created dictionary item
  */
 dict_item* create_item(char* key, int value) {
-    dict_item* item = (dict_item*) malloc (sizeof(dict_item));
-    item->key = (char*) malloc (strlen(key) + 1);
+    dict_item* item = malloc (sizeof(dict_item));
+    item->key = malloc (strlen(key) + 1);
      
     strcpy(item->key, key);
     item->value = value;
@@ -158,7 +158,7 @@ dict_item* create_item(char* key, int value) {
  * @return a pointer to the newly created dictionary  
  */
 dict* create_dict(int size) {
-    dict* d = (dict*) malloc (sizeof(dict));
+    dict* d = malloc (sizeof(dict));
     d->size = size;
     d->count = 0;
     d->items = (dict_item**) calloc (d->size, sizeof(dict_item*));
