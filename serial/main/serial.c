@@ -70,25 +70,31 @@ void respond(void *pvParameter) {
 
 		// "Switch" through available commands
 		if (strcmp(command, "PING") == 0) {
-			serial_out(command_ping());
+			command_ping();
 		} else if (strcmp(command, "MAC") == 0) {
-			serial_out(command_mac());
+			command_mac();
 		} else if (strcmp(command, "ID") == 0 ) {
-			serial_out(command_id());
+			command_id();
 		} else if (strcmp(command, "VERSION") == 0) {
-			serial_out(command_version());
+			command_version();
 		} else if (strcmp(command, "ERROR") == 0) {
-			serial_out(get_error());
+			get_error();
 		} else if (strcmp(command, "STORE") == 0) {
-			serial_out(command_store(quant, split, dictionary));
+			command_store(quant, split, dictionary);
 		} else if (strcmp(command, "QUERY") == 0) {
-			serial_out(command_query(quant, split, dictionary));
+			command_query(quant, split, dictionary);
 		} else if (strcmp(command, "PUSH") == 0) {
-			serial_out(command_push(quant, split, stack_pointer));
+			command_push(quant, split, stack_pointer);
 		} else if (strcmp(command, "POP") == 0) {
-			serial_out(command_pop(stack_pointer));
+			command_pop(stack_pointer);
 		} else if (strcmp(command, "ADD") == 0) {
-			serial_out(command_add(quant, split, stack_pointer));
+			command_add(quant, split, stack_pointer);
+		} else if (strcmp(command, "PS") == 0) {
+			command_ps();
+		} else if (strcmp(command, "RESULT") == 0) {
+			command_result(quant, split);
+		} else if (strcmp(command, "FACTOR") == 0) {
+			command_factor(quant, split);
 		} else {
 			// Default case, command does not exist
 			serial_out("command error");
@@ -165,7 +171,7 @@ void main_task(void *pvParameter) {
 					NULL,
 					HIGH_PRIORITY,
 					NULL,
-					tskNO_AFFINITY
+					tskNO_AFFINITY // Use both cores based on availability
 				);
 			}
 		}
@@ -185,12 +191,12 @@ void app_main(void) {
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
 
-	xTaskCreate(
-		&main_task,
-		"main_task",
-		2048,
-		NULL,
-		MAIN_PRIORITY,
-		NULL
+    xTaskCreate(
+        &main_task,    // - function ptr
+        "main_task",   // - arbitrary name
+        2048,          // - stack size [byte]
+        NULL,          // - optional data for task
+        MAIN_PRIORITY, // - priority of the main task
+        NULL		   // - handle to task (for control)
 	);
 }

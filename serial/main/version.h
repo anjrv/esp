@@ -2,9 +2,9 @@
 #define VERSION_H_ 
 
 #define DEVELOPER_ID "s114"
-#define MAJOR 1
-#define MINOR 3
-#define REVISION 2
+#define MAJOR 2 
+#define MINOR 0
+#define REVISION 0
 
 /**
  * VERSION HISTORY
@@ -29,6 +29,8 @@
  * 1.3.2 - Dictionary query method changed to mutate pointer
  *         and return an integer TRUE/FALSE to more easily
  *         manage whether key value pairs exist or not
+ * 
+ * 2.0.0 - Assignment 2 setup, main response loop tasks added
  */
 
 #endif

@@ -8,6 +8,7 @@
 #include "dict.h"
 #include "stack.h"
 #include "utils.h"
+#include "serial.h"
 #include "commands.h"
 
 #define MSG_BUFFER_LENGTH 256
@@ -48,32 +49,30 @@ void set_error(char* status, char* command) {
     }
 }
 
+////////////////////////
+// IMMEDIATE COMMANDS //
+////////////////////////
+
 /**
- * Returns information about the error state of the previous command
- * 
- * @return the error state of the previous command (if there was one)
+ * Prints information about the error state of the previous command
  */
-char* get_error() {
-   return err_msg; 
+void get_error() {
+   serial_out(err_msg); 
 }
 
 /**
- * Returns "pong"
- * 
- * @return "pong"
+ * Prints "pong"
  */
-char* command_ping() {
+void command_ping() {
     set_error("success", "");
-    return "pong";
+    serial_out("pong");
 }
 
 /**
- * Returns the mac address of the device 
+ * Prints the mac address of the device 
  * Leading zeroes are left in
- * 
- * @return the mac address of the device
  */
-char* command_mac() {
+void command_mac() {
     uint8_t mac[6];
     esp_efuse_mac_get_default(mac);
     sprintf(
@@ -88,26 +87,22 @@ char* command_mac() {
     );
 
     set_error("success", "");
-    return mac_addr;
+    serial_out(mac_addr);
 }
 
 /**
- * Returns the id of the developer
- * 
- * @return the id of the developer
+ * Prints the id of the developer
  */
-char* command_id() {
+void command_id() {
     set_error("success", "");
-    return DEVELOPER_ID;
+    serial_out(DEVELOPER_ID);
 }
 
 /**
- * Returns the firmware version of the device
+ * Prints the firmware version of the device
  * defined in version.h
- * 
- * @return the firmware version of the device 
  */
-char* command_version() {
+void command_version() {
     sprintf(
         version,
         "%d.%d.%d",
@@ -117,7 +112,7 @@ char* command_version() {
     );
 
     set_error("success", "");
-    return version;
+    serial_out(version);
 }
 
 int validate_name(char* key) {
@@ -146,11 +141,8 @@ int validate_name(char* key) {
  * @param dictionary the dictionary currently in use by the device,
  *                   this is initialized in the main function
  *                   in serial.c
- * 
- * @return the previously stored variable if there was one
- *         if there wasn't one returns "undefined" 
  */
-char* command_store(int num_args, char** vars, dict* dictionary) {
+void command_store(int num_args, char** vars, dict* dictionary) {
     char* res;
 
     if (num_args == 3 && strlen(vars[1]) <= 16) {
@@ -179,15 +171,15 @@ char* command_store(int num_args, char** vars, dict* dictionary) {
 
                 free(stored);
                 free(var);
-                return res;
+                serial_out(res);
+                return;
             }
 
             free(var);
         }
     }
 
-    res = "argument error";
-    return res;
+    serial_out("argument error");
 }
 
 /**
@@ -198,11 +190,8 @@ char* command_store(int num_args, char** vars, dict* dictionary) {
  * @param dictionary the dictionary currently in use by the device,
  *                   this is initialized in the main function
  *                   in serial.c
- * 
- * @return the stored variable at the given name if there is one 
- *         if there isn't one returns "undefined" 
  */
-char* command_query(int num_args, char** vars, dict* dictionary) {
+void command_query(int num_args, char** vars, dict* dictionary) {
     char* res;
 
     if (num_args == 2) {
@@ -218,11 +207,11 @@ char* command_query(int num_args, char** vars, dict* dictionary) {
         }
 
         free(stored);
-        return res;
+        serial_out(res);
+        return;
     }
 
-    res = "argument error";
-    return res;
+    serial_out("argument error");
 }
 
 /**
@@ -233,15 +222,15 @@ char* command_query(int num_args, char** vars, dict* dictionary) {
  * @param stack_pointer the stack currently in use by the device,
  *                      this is initialized in the main function
  *                      in serial.c
- * 
- * @return "done" if the push succeeds, an error state otherwise 
  */
-char* command_push(int num_args, char** vars, stack *stack_pointer) {
+void command_push(int num_args, char** vars, stack *stack_pointer) {
     if (num_args != 2) {
-        return "argument error";
+        serial_out("argument error");
+        return;
     } else if (is_stack_full(stack_pointer)) {
         set_error("error: stack overflow", "push");
-        return "overflow";
+        serial_out("overflow");
+        return;
     }
 
     int *value;
@@ -251,10 +240,11 @@ char* command_push(int num_args, char** vars, stack *stack_pointer) {
         push(stack_pointer, *value);
         free(value);
         set_error("success","");
-        return "done";
+        serial_out("done");
+        return;
     }
 
-    return "argument error";
+    serial_out("argument error");
 }
 
 /**
@@ -269,17 +259,17 @@ char* command_push(int num_args, char** vars, stack *stack_pointer) {
  * @param stack_pointer stack currently in use by the device,
  *                      this is initialized in the main function
  *                      in serial.c
- * 
- * @return the outcome of the calculation if valid values are found 
  */
-char* command_add(int num_args, char** vars, stack *stack_pointer) {
+void command_add(int num_args, char** vars, stack *stack_pointer) {
     if (num_args < 2) {
         set_error("error: undefined variable", "add");
-        return "undefined";
+        serial_out("undefined");
+        return;
     }
 
     if (num_args > 3) {
-        return "argument error";
+        serial_out("argument error");
+        return;
     }
 
     int *var1;
@@ -291,7 +281,8 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
 
         if (num_args > 2) {
             if (!parse_int(vars[2], var2)) {
-                return "argument error";
+                serial_out("argument error");
+                return;
             }
 
             char* res = long_to_string(*var1 + *var2);
@@ -299,12 +290,14 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
             set_error("success", "");
             free(var1);
             free(var2);
-            return res;   
+            serial_out(res);
+            return;   
         } else if (is_stack_empty(stack_pointer)) {
             free(var1);
             free(var2);
             set_error("error: undefined variable, stack is empty", "add");
-            return "undefined";
+            serial_out("undefined");
+            return;
         } else {
             *var2 = peek(stack_pointer);
             char* res = long_to_string(*var1 + *var2);
@@ -312,14 +305,16 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
             free(var1);
             free(var2);
             set_error("success", "");
-            return res;   
+            serial_out(res);
+            return;
         }
     } else {
-        return "argument error";
+        serial_out("argument error");
+        return;
     }
 
     set_error("error: undefined variable", "add");
-    return "undefined";
+    serial_out("undefined");
 }
 
 /**
@@ -331,18 +326,34 @@ char* command_add(int num_args, char** vars, stack *stack_pointer) {
  * @param stack_pointer the stack currently in use by the device,
  *                      this is initialized in the main function
  *                      in serial.c
- * 
- * @return the value if the pop succeeds, an error state otherwise
  */
-char* command_pop(stack *stack_pointer) {
+void command_pop(stack *stack_pointer) {
     if (is_stack_empty(stack_pointer)) {
         set_error("error: undefined variable, stack is empty", "pop");
-        return "undefined";
+        serial_out("undefined");
+        return;
     } 
 
     int val  = pop(stack_pointer);
     char* res = long_to_string(val);
 
     set_error("success", "");
-    return res;
+    serial_out(res);
 }
+
+void command_ps() {
+
+}
+
+void command_result(int num_args, char** vars) {
+
+}
+
+void command_factor(int num_args, char** vars) {
+
+}
+
+/////////////////////////
+// BACKGROUND COMMANDS //
+/////////////////////////
+
