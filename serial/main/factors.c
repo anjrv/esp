@@ -66,7 +66,15 @@ int insert(char* id, int value) {
 
     link->id = malloc(strlen(id)+ 1);
     link->state = PENDING;
-    link->value = value;
+
+    // Same invalid factor as 1 so well keep -1
+    // to indicate semaphore state
+    if (value == -1) {
+        link->value = abs(value);
+    } else {
+        link->value = value;
+    }
+
     link->factors = NULL;
 
     strcpy(link->id, id);
