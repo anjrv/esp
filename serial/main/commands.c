@@ -342,13 +342,25 @@ void command_pop(stack *stack_pointer) {
     serial_out(res);
 }
 
+/**
+ * Prints the status of the existing factoring processes
+ */ 
 void command_ps() {
     display();
 }
 
+/**
+ * Prints the result ( or status if not complete ) of
+ * a previous factoring process if a valid ID is given
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ */
 void command_result(int num_args, char** vars) {
     if (num_args == 2) {
         result(vars[1]);
+    } else {
+        serial_out("argument error");
     }
 }
 
@@ -356,6 +368,20 @@ void command_result(int num_args, char** vars) {
 // BACKGROUND COMMANDS //
 /////////////////////////
 
+/**
+ * Gets the prime factors of:
+ * - A given integer value
+ * - A given dictionary entry
+ * - The number at the top of the stack
+ * 
+ * Prints the id of the factoring process upon creation.
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ * @param counter       the current task number
+ * @param stack_pointer stack currently in use by the device,
+ * @param dictionary    the dictionary currently in use by the device,
+ */ 
 void command_factor(int num_args, char** vars, int counter, stack *stack_pointer, dict* dictionary) {
     char id[16] = "id";
     snprintf(id, 16, "id%d", counter);

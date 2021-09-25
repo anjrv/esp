@@ -6,11 +6,13 @@
 * The response variant from the first firmware version was relatively easy to implement into this task structure. All that was really required was to shift the app_main process to a main process that could be task created and then after that the old response function could simply be created as a high priority task.
     - A minor adjustment was made in that serial responses were moved to the commands themselves rather than the response function, this was done because ps demanded multi line response capability and at that point, for consistency, it became better to standardize response output into the commands and subfunctions therein.
 * The new commands were generally implemented by giving them a semaphore controlled local linked list structure which matched the required information ( current process state, the factor response, etc. )
+* Explicit core pinning was not really used and instead I opted for `tskNO_AFFINITY` which should presumably use available cores after the priority available ( This should then provide multicore functionality for our tasks if it is available but simply use single core if it is not )
 
 ## Quirks
 
 * For the factoring function itself a generic special response was added for input numbers of 1 and 0  ( cannot be factored ) this is also used for undefined behavior when the value to be factored fails to be read properly.
 * Generally the newly implemented ps function will list processes from newest to oldest since it simply iterates from the head of the list and new entries are inserted at the head.
+* There is no real explicit limit to number of tasks, its not so much as a queue as it is just creating tasks named based on their ID tag. It remains to be really seen how this works out in the long run, currently integer factors don't exactly take very long so testing intended behaviour of a large number of background processes was a little strange.
 
 # Assignment 1 Information ( Old )
 

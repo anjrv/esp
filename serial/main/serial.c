@@ -12,6 +12,8 @@
 #include "factors.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
+// Data structures and global variables to ease communication
+// between the main loop and response function
 dict* dictionary;
 stack* stack_pointer;
 int counter;
@@ -40,12 +42,15 @@ void serial_out(const char* string) {
 }
 
 /**
- * respond(..) provides routing for the given query string 
- * Sends out the outcome of the command + argument combination
+ * respond(..) provides routing for the given query string
+ * after splitting it into space delimited tokens
+ * 
+ * @param pvParameter function call parameter not used
  */
 void respond(void *pvParameter) {
 	char** split = NULL;
-	char* p = strtok(q, " ");
+	char* duplicate = strdup(q);
+	char* p = strtok(duplicate, " ");
     int quant = 0;
 
     while(p) {
@@ -107,6 +112,14 @@ void respond(void *pvParameter) {
 	vTaskDelete(NULL); // Respond deletes itself when done
 }
 
+/**
+ * Main loop function of the app
+ * 
+ * Reads user input and creates
+ * response function as needed
+ * 
+ * @param pvParameter function call parameter not used
+ */
 void main_task(void *pvParameter) {
 	serial_out("firmware ready");
 
@@ -178,11 +191,7 @@ void main_task(void *pvParameter) {
 }
 
 /**
- * Entry point main function
- * Reads in query string and validates length
- * 
- * If length is satisfied query string is
- * routed to the respond() function.
+ * Entry point function, creates the main loop
  */
 void app_main(void) {
 	dictionary = create_dict(DICT_CAPACITY);

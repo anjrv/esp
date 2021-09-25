@@ -34,6 +34,9 @@
  * 
  * 2.1.0 - Int return values standardized to something more
  *         C like (0 normal exit, alternatively error state)
+ * 
+ * 2.2.0 - Factoring functions and tasks added along with
+ *         a storage implementation.
  */
 
 #endif
