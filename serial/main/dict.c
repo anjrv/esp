@@ -273,18 +273,18 @@ int query(dict* d, char* key, int* ptr) {
         if (strcmp(item->key, key) == 0) {
             *ptr = item->value;
 
-            return 1;
+            return 0;
         }
 
         if (head == NULL) {
-            return 0;
+            return 1;
         }
 
         item = head->item;
         head = head->next;
     }
 
-    return 0;
+    return 1;
 }
 
 void dict_delete(dict* d, char* key) {

@@ -151,11 +151,11 @@ void command_store(int num_args, char** vars, dict* dictionary) {
             int *var;
             var = malloc(sizeof(*var));
 
-            if (parse_int(vars[2], var)) {
+            if (parse_int(vars[2], var) == 0) {
                 int *stored;
                 stored = malloc(sizeof(*stored));
 
-                if (query(dictionary, vars[1], stored)) {
+                if (query(dictionary, vars[1], stored) == 0) {
                     res = long_to_string(*stored);
                 } else {
                     res = "undefined";
@@ -199,7 +199,7 @@ void command_query(int num_args, char** vars, dict* dictionary) {
         int *stored;
 
         stored = malloc(sizeof(*stored));
-        if (query(dictionary, vars[1], stored)) {
+        if (query(dictionary, vars[1], stored) == 0) {
             res = long_to_string(*stored);
             set_error("success","");
         } else {
@@ -237,7 +237,7 @@ void command_push(int num_args, char** vars, stack *stack_pointer) {
     int *value;
     value = malloc(sizeof(*value));
 
-    if (parse_int(vars[1], value)) {
+    if (parse_int(vars[1], value) == 0) {
         push(stack_pointer, *value);
         free(value);
         set_error("success","");
@@ -276,12 +276,12 @@ void command_add(int num_args, char** vars, stack *stack_pointer) {
     int *var1;
     var1 = malloc(sizeof(*var1));
 
-    if (parse_int(vars[1], var1)) {
+    if (parse_int(vars[1], var1) == 0) {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
         if (num_args > 2) {
-            if (!parse_int(vars[2], var2)) {
+            if (parse_int(vars[2], var2) != 0) {
                 serial_out("argument error");
                 return;
             }
@@ -343,11 +343,13 @@ void command_pop(stack *stack_pointer) {
 }
 
 void command_ps() {
-
+    display();
 }
 
 void command_result(int num_args, char** vars) {
-
+    if (num_args == 2) {
+        result(vars[1]);
+    }
 }
 
 /////////////////////////
@@ -355,16 +357,15 @@ void command_result(int num_args, char** vars) {
 /////////////////////////
 
 void command_factor(int num_args, char** vars, int counter, stack *stack_pointer, dict* dictionary) {
-    // Currently only really allocating for 99999 different id values
-    char id[8] = "id";
-    snprintf(id, 8, "id%d", counter);
+    char id[16] = "id";
+    snprintf(id, 16, "id%d", counter);
 
     int *var;
     var = malloc(sizeof(*var));
 
     if (num_args == 2) {
-        if (parse_int(vars[1], var) || query(dictionary, vars[1], var)) {
-            if(prepare_factor(*var, id)) {
+        if ((parse_int(vars[1], var) == 0)|| (query(dictionary, vars[1], var) == 0)) {
+            if(prepare_factor(*var, id) == 0) {
                 serial_out(id);
             } else {
                 serial_out("could not start task");
@@ -373,7 +374,7 @@ void command_factor(int num_args, char** vars, int counter, stack *stack_pointer
         }
     } else if (num_args < 2 && !is_stack_empty(stack_pointer)) {
         *var = peek(stack_pointer);
-        if (prepare_factor(*var, id)) {
+        if (prepare_factor(*var, id) == 0) {
             serial_out(id);
         } else {
             serial_out("could not start task");

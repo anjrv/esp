@@ -24,7 +24,7 @@ int parse_int(char* str, int* ptr) {
     if (strcmp(str, "0") == 0) {
         *ptr = 0;
 
-        return 1;
+        return 0;
     }
 
     long long x = strtoll(str, &endptr, 10);
@@ -32,10 +32,10 @@ int parse_int(char* str, int* ptr) {
         int res = x;
         *ptr = res;
 
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 /**

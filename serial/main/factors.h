@@ -6,5 +6,7 @@
 #define HIGH_PRIORITY 4
 
 int prepare_factor(int value, char* id);
+int result(char* id);
+void display();
 
 #endif

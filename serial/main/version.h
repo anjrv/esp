@@ -31,6 +31,9 @@
  *         manage whether key value pairs exist or not
  * 
  * 2.0.0 - Assignment 2 setup, main response loop tasks added
+ * 
+ * 2.1.0 - Int return values standardized to something more
+ *         C like (0 normal exit, alternatively error state)
  */
 
 #endif

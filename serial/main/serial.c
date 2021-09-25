@@ -4,13 +4,12 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "serial.h"
 #include "stack.h"
 #include "dict.h"
 #include "utils.h"
 #include "commands.h"
 #include "factors.h"
-
-#define MSG_BUFFER_LENGTH 256
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 dict* dictionary;
@@ -165,7 +164,7 @@ void main_task(void *pvParameter) {
 				xTaskCreatePinnedToCore(
 					&respond,
 					"respond",
-					2048,
+					8192,
 					NULL,
 					HIGH_PRIORITY,
 					NULL,
