@@ -196,6 +196,7 @@ void main_task(void *pvParameter) {
 void app_main(void) {
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
+	initialize_factors();
 	counter = 0;
 
     xTaskCreate(

@@ -3,8 +3,8 @@
 
 #define DEVELOPER_ID "s114"
 #define MAJOR 2 
-#define MINOR 0
-#define REVISION 0
+#define MINOR 3 
+#define REVISION 1 
 
 /**
  * VERSION HISTORY
@@ -37,6 +37,10 @@
  * 
  * 2.2.0 - Factoring functions and tasks added along with
  *         a storage implementation.
+ * 
+ * 2.3.0 - Semaphore added for factoring helpers
+ * 
+ * 2.3.1 - More documentation
  */
 
 #endif
