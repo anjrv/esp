@@ -4,7 +4,7 @@
 #define DEVELOPER_ID "s114"
 #define MAJOR 2 
 #define MINOR 3 
-#define REVISION 1 
+#define REVISION 2 
 
 /**
  * VERSION HISTORY
@@ -41,6 +41,8 @@
  * 2.3.0 - Semaphore added for factoring helpers
  * 
  * 2.3.1 - More documentation
+ * 
+ * 2.3.2 - Regex check to block invalid result command requests
  */
 
 #endif

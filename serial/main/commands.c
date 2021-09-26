@@ -116,22 +116,21 @@ void command_version() {
     serial_out(version);
 }
 
-int validate_name(char* key) {
+int validate(char* key, char* pattern) {
     regex_t re;
-    const char* pattern = "[a-zA-Z_]+";
     
     if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
-        return 0;
+        return -1;
     }
 
     int status = regexec(&re, key, (size_t)0, NULL, 0);
     regfree(&re);
 
     if (status != 0) { 
-        return 0;
+        return -2;
     }
 
-    return 1;
+    return 0;
 }
 
 /**
@@ -147,7 +146,7 @@ void command_store(int num_args, char** vars, dict* dictionary) {
     char* res;
 
     if (num_args == 3 && strlen(vars[1]) <= 16) {
-        if (validate_name(vars[1])) {
+        if (validate(vars[1], "[a-zA-Z_]+") == 0) {
             int *var;
             var = malloc(sizeof(*var));
 
@@ -358,7 +357,11 @@ void command_ps() {
  */
 void command_result(int num_args, char** vars) {
     if (num_args == 2) {
-        get_result(vars[1]);
+        if (validate(vars[1], "id[0-9]+") == 0) {
+            get_result(vars[1]);
+        } else {
+            serial_out("invalid id");
+        }
     } else {
         serial_out("argument error");
     }
