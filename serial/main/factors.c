@@ -129,6 +129,12 @@ int result(char* id) {
     return 0;
 }
 
+void get_result(char* id) {
+    while(result(id) == -1) {
+        vTaskDelay(DELAY);
+    }
+}
+
 /**
  * Function to obtain the value at the node indicated by the id
  * 
@@ -243,6 +249,12 @@ int display() {
 
     xSemaphoreGive(head_access);
     return 0;
+}
+
+void display_factors() {
+    while (display() == -1) {
+        vTaskDelay(DELAY);
+    }
 }
 
 /**

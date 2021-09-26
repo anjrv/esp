@@ -346,9 +346,7 @@ void command_pop(stack *stack_pointer) {
  * Prints the status of the existing factoring processes
  */ 
 void command_ps() {
-    while (display() == -1) {
-        vTaskDelay(DELAY);
-    }
+    display_factors();
 }
 
 /**
@@ -360,9 +358,7 @@ void command_ps() {
  */
 void command_result(int num_args, char** vars) {
     if (num_args == 2) {
-        while(result(vars[1]) == -1) {
-            vTaskDelay(DELAY);
-        }
+        get_result(vars[1]);
     } else {
         serial_out("argument error");
     }

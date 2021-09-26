@@ -9,7 +9,7 @@
 
 void initialize_factors();
 int prepare_factor(int value, char* id);
-int result(char* id);
-int display();
+void get_result(char* id);
+void display_factors();
 
 #endif
