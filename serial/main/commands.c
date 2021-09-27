@@ -275,12 +275,12 @@ void command_add(int num_args, char** vars, stack *stack_pointer) {
     int *var1;
     var1 = malloc(sizeof(*var1));
 
-    if (parse_int(vars[1], var1) == 0) {
+    if ((query(dictionary, vars[1], var) == 0)) {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
         if (num_args > 2) {
-            if (parse_int(vars[2], var2) != 0) {
+            if ((query(dictionary, vars[2], var) != 0)) {
                 serial_out("argument error");
                 return;
             }

@@ -3,8 +3,8 @@
 
 #define DEVELOPER_ID "s114"
 #define MAJOR 2 
-#define MINOR 3 
-#define REVISION 2 
+#define MINOR 4 
+#define REVISION 0 
 
 /**
  * VERSION HISTORY
@@ -43,6 +43,9 @@
  * 2.3.1 - More documentation
  * 
  * 2.3.2 - Regex check to block invalid result command requests
+ * 
+ * 2.4.0 - Functionality of add changed to what it was actually supposed to be
+ *         ( I Can't Fucking Read )
  */
 
 #endif

@@ -3,10 +3,21 @@
 
 ## Changes and new implementation
 
-* The response variant from the first firmware version was relatively easy to implement into this task structure. All that was really required was to shift the app_main process to a main process that could be task created and then after that the old response function could simply be created as a high priority task.
+* The response variant from the first firmware version was relatively easy to implement into this task structure. All that was really required was to shift the app_main process to a main process that could be task( created and then after that the old response function could simply be created as a high priority task.
     - A minor adjustment was made in that serial responses were moved to the commands themselves rather than the response function, this was done because ps demanded multi line response capability and at that point, for consistency, it became better to standardize response output into the commands and subfunctions therein.
 * The new commands were generally implemented by giving them a semaphore controlled local linked list structure which matched the required information ( current process state, the factor response, etc. )
 * Explicit core pinning was not really used and instead I opted for `tskNO_AFFINITY` which should presumably use available cores after the priority available ( This should then provide multicore functionality for our tasks if it is available but simply use single core if it is not )
+
+### Command add changes
+
+* Why was the previous implementation weird and used integer arguments instead of stored variables?
+    - I can't fucking read
+    - It has since been fixed to work as defined
+* Why does/did it allocate memory ( malloc(...) ) for the arguments received
+    - I mostly made the parsing and storage functions take pointers which they mutated
+    - ( parse_int(...) as well as the dictionary query(...) )
+    - This was kind of a hacky way to make the return value int an exit status ( initially parse_int actually used atoi but... yeah )
+    - In general I had the sense that the function would end up being well defined enough that it could free the two pointers it mallocs
 
 ## Quirks
 
