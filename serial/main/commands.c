@@ -259,8 +259,9 @@ void command_push(int num_args, char** vars, stack *stack_pointer) {
  * @param stack_pointer stack currently in use by the device,
  *                      this is initialized in the main function
  *                      in serial.c
+ * @param dictionary    the dictionary currently in use by the device,
  */
-void command_add(int num_args, char** vars, stack *stack_pointer) {
+void command_add(int num_args, char** vars, stack *stack_pointer, dict* dictionary) {
     if (num_args < 2) {
         set_error("error: undefined variable", "add");
         serial_out("undefined");
@@ -275,12 +276,12 @@ void command_add(int num_args, char** vars, stack *stack_pointer) {
     int *var1;
     var1 = malloc(sizeof(*var1));
 
-    if ((query(dictionary, vars[1], var) == 0)) {
+    if ((query(dictionary, vars[1], var1) == 0)) {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
         if (num_args > 2) {
-            if ((query(dictionary, vars[2], var) != 0)) {
+            if ((query(dictionary, vars[2], var2) != 0)) {
                 serial_out("argument error");
                 return;
             }

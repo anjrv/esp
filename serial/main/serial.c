@@ -90,7 +90,7 @@ void respond(void *pvParameter) {
 		} else if (strcmp(command, "POP") == 0) {
 			command_pop(stack_pointer);
 		} else if (strcmp(command, "ADD") == 0) {
-			command_add(quant, split, stack_pointer);
+			command_add(quant, split, stack_pointer, dictionary);
 		} else if (strcmp(command, "PS") == 0) {
 			command_ps();
 		} else if (strcmp(command, "RESULT") == 0) {
