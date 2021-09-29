@@ -181,7 +181,6 @@ int get(char* id) {
  *         * -1 indicates that obtaining a semaphore failed
  *         * 0 indicates that changing was a success
  */
-
 int change(char* id, char state, char* factors) {
     if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE) {
 		return -1;
@@ -251,6 +250,9 @@ int display() {
     return 0;
 }
 
+/**
+ * Print factor tasks out to serial
+ */
 void display_factors() {
     while (display() == -1) {
         vTaskDelay(DELAY);
@@ -261,6 +263,7 @@ void display_factors() {
  * Main factoring function 
  * 
  * @param pvParameter should be the id of the node that the function needs to work on
+ *                    the memory of this pointer is freed at the end of factoring
  */
 void factor(void *pvParameter) {
     char* id;
@@ -271,9 +274,16 @@ void factor(void *pvParameter) {
     snprintf(res, 10, "%d", num);
     strcat(res, ":");
 
-    // 1, 0 or invalid input, end early
-    if (num == 1 || num == 0) {
-        strcat(res, " no prime factors");
+    // 0 and 1 are not valid requests, output just mirrors input for now to provide a number
+    if (num == 0) {
+        strcat(res, " 0");
+        change(id, COMPLETE0, res);
+        free(id);
+        vTaskDelete(NULL);
+    }
+
+    if (num == 1) {
+        strcat(res, " 1");
         change(id, COMPLETE0, res);
         free(id);
         vTaskDelete(NULL);
