@@ -275,6 +275,7 @@ void factor(void *pvParameter) {
     if (num == 1 || num == 0) {
         strcat(res, " no prime factors");
         change(id, COMPLETE0, res);
+        free(id);
         vTaskDelete(NULL);
     }
 
@@ -310,6 +311,7 @@ void factor(void *pvParameter) {
         vTaskDelay(DELAY);
     }
 
+    free(id);
     vTaskDelete(NULL);
 }
 
@@ -324,7 +326,8 @@ void factor(void *pvParameter) {
  */
 int prepare_factor(int value, char* id) {
     BaseType_t success;
-    static char* tag = NULL;
+    char* tag = NULL;
+    // Task frees this pointer before deletion
     tag = malloc(strlen(id) + 1);
     strcpy(tag, id);
 
