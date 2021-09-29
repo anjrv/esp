@@ -317,6 +317,7 @@ void factor(void *pvParameter) {
         strcat(res, long_to_string(num));
     }
 
+    // Try write result to list
     while (change(id, COMPLETE0, res) == -1) {
         vTaskDelay(DELAY);
     }
