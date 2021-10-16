@@ -29,8 +29,8 @@
 
 // Non local variables
 char err_msg[MSG_BUFFER_LENGTH] = "no history";
-char mac_addr[18] = { 0 };
-char version[6] = { 0 };
+char mac_addr[18] = {0};
+char version[6] = {0};
 
 /**
  * Used for setting the current error state
@@ -38,12 +38,16 @@ char version[6] = { 0 };
  * @param status    the status of the previous command 
  * @param command   the name of the previous command
  */
-void set_error(char* status, char* command) {
+void set_error(char *status, char *command)
+{
     memset(err_msg, 0, MSG_BUFFER_LENGTH);
 
-    if (strcmp(command, "") == 0) {
+    if (strcmp(command, "") == 0)
+    {
         strcpy(err_msg, status);
-    } else {
+    }
+    else
+    {
         strcat(err_msg, status);
         strcat(err_msg, " on command - ");
         strcat(err_msg, command);
@@ -57,14 +61,16 @@ void set_error(char* status, char* command) {
 /**
  * Prints information about the error state of the previous command
  */
-void get_error() {
-   serial_out(err_msg); 
+void get_error()
+{
+    serial_out(err_msg);
 }
 
 /**
  * Prints "pong"
  */
-void command_ping() {
+void command_ping()
+{
     set_error("success", "");
     serial_out("pong");
 }
@@ -73,7 +79,8 @@ void command_ping() {
  * Prints the mac address of the device 
  * Leading zeroes are left in
  */
-void command_mac() {
+void command_mac()
+{
     uint8_t mac[6];
     esp_efuse_mac_get_default(mac);
     sprintf(
@@ -84,8 +91,7 @@ void command_mac() {
         mac[2],
         mac[3],
         mac[4],
-        mac[5]
-    );
+        mac[5]);
 
     set_error("success", "");
     serial_out(mac_addr);
@@ -94,7 +100,8 @@ void command_mac() {
 /**
  * Prints the id of the developer
  */
-void command_id() {
+void command_id()
+{
     set_error("success", "");
     serial_out(DEVELOPER_ID);
 }
@@ -103,30 +110,33 @@ void command_id() {
  * Prints the firmware version of the device
  * defined in version.h
  */
-void command_version() {
+void command_version()
+{
     sprintf(
         version,
         "%d.%d.%d",
         MAJOR,
         MINOR,
-        REVISION
-    );
+        REVISION);
 
     set_error("success", "");
     serial_out(version);
 }
 
-int validate(char* key, char* pattern) {
+int validate(char *key, char *pattern)
+{
     regex_t re;
-    
-    if (regcomp(&re, pattern, REG_EXTENDED) != 0) {
+
+    if (regcomp(&re, pattern, REG_EXTENDED) != 0)
+    {
         return -1;
     }
 
     int status = regexec(&re, key, (size_t)0, NULL, 0);
     regfree(&re);
 
-    if (status != 0) { 
+    if (status != 0)
+    {
         return -2;
     }
 
@@ -142,32 +152,41 @@ int validate(char* key, char* pattern) {
  *                   this is initialized in the main function
  *                   in serial.c
  */
-void command_store(int num_args, char** vars, dict* dictionary) {
-    char* res;
+void command_store(int num_args, char **vars, dict *dictionary)
+{
+    char *res;
 
-    if (num_args == 3 && strlen(vars[1]) <= 16) {
-        if (validate(vars[1], "[a-zA-Z_]+") == 0) {
+    if (num_args == 3 && strlen(vars[1]) <= 16)
+    {
+        if (validate(vars[1], "[a-zA-Z_]+") == 0)
+        {
             int *var;
             var = malloc(sizeof(*var));
 
-            if (parse_int(vars[2], var) == 0) {
+            if (parse_int(vars[2], var) == 0)
+            {
                 int *stored;
                 stored = malloc(sizeof(*stored));
 
-                if (query(dictionary, vars[1], stored) == 0) {
+                if (query(dictionary, vars[1], stored) == 0)
+                {
                     res = long_to_string(*stored);
-                } else {
+                }
+                else
+                {
                     res = "undefined";
                 }
 
-                if (!is_dict_full(dictionary)) {
+                if (!is_dict_full(dictionary))
+                {
                     store(dictionary, vars[1], *var);
                     set_error("success", "");
-                } else {
+                }
+                else
+                {
                     set_error("error: storage full", "store");
                     res = "storage exceeded";
                 }
-
 
                 free(stored);
                 free(var);
@@ -191,17 +210,22 @@ void command_store(int num_args, char** vars, dict* dictionary) {
  *                   this is initialized in the main function
  *                   in serial.c
  */
-void command_query(int num_args, char** vars, dict* dictionary) {
-    char* res;
+void command_query(int num_args, char **vars, dict *dictionary)
+{
+    char *res;
 
-    if (num_args == 2) {
+    if (num_args == 2)
+    {
         int *stored;
 
         stored = malloc(sizeof(*stored));
-        if (query(dictionary, vars[1], stored) == 0) {
+        if (query(dictionary, vars[1], stored) == 0)
+        {
             res = long_to_string(*stored);
-            set_error("success","");
-        } else {
+            set_error("success", "");
+        }
+        else
+        {
             res = "undefined";
             set_error("error: undefined variable", "query");
         }
@@ -223,11 +247,15 @@ void command_query(int num_args, char** vars, dict* dictionary) {
  *                      this is initialized in the main function
  *                      in serial.c
  */
-void command_push(int num_args, char** vars, stack *stack_pointer) {
-    if (num_args != 2) {
+void command_push(int num_args, char **vars, stack *stack_pointer)
+{
+    if (num_args != 2)
+    {
         serial_out("argument error");
         return;
-    } else if (is_stack_full(stack_pointer)) {
+    }
+    else if (is_stack_full(stack_pointer))
+    {
         set_error("error: stack overflow", "push");
         serial_out("overflow");
         return;
@@ -236,10 +264,11 @@ void command_push(int num_args, char** vars, stack *stack_pointer) {
     int *value;
     value = malloc(sizeof(*value));
 
-    if (parse_int(vars[1], value) == 0) {
+    if (parse_int(vars[1], value) == 0)
+    {
         push(stack_pointer, *value);
         free(value);
-        set_error("success","");
+        set_error("success", "");
         serial_out("done");
         return;
     }
@@ -261,14 +290,17 @@ void command_push(int num_args, char** vars, stack *stack_pointer) {
  *                      in serial.c
  * @param dictionary    the dictionary currently in use by the device,
  */
-void command_add(int num_args, char** vars, stack *stack_pointer, dict* dictionary) {
-    if (num_args < 2) {
+void command_add(int num_args, char **vars, stack *stack_pointer, dict *dictionary)
+{
+    if (num_args < 2)
+    {
         set_error("error: undefined variable", "add");
         serial_out("undefined");
         return;
     }
 
-    if (num_args > 3) {
+    if (num_args > 3)
+    {
         serial_out("argument error");
         return;
     }
@@ -276,32 +308,39 @@ void command_add(int num_args, char** vars, stack *stack_pointer, dict* dictiona
     int *var1;
     var1 = malloc(sizeof(*var1));
 
-    if ((query(dictionary, vars[1], var1) == 0)) {
+    if ((query(dictionary, vars[1], var1) == 0))
+    {
         int *var2;
         var2 = malloc(sizeof(*var2));
 
-        if (num_args > 2) {
-            if ((query(dictionary, vars[2], var2) != 0)) {
+        if (num_args > 2)
+        {
+            if ((query(dictionary, vars[2], var2) != 0))
+            {
                 serial_out("argument error");
                 return;
             }
 
-            char* res = long_to_string(*var1 + *var2);
+            char *res = long_to_string(*var1 + *var2);
 
             set_error("success", "");
             free(var1);
             free(var2);
             serial_out(res);
-            return;   
-        } else if (is_stack_empty(stack_pointer)) {
+            return;
+        }
+        else if (is_stack_empty(stack_pointer))
+        {
             free(var1);
             free(var2);
             set_error("error: undefined variable, stack is empty", "add");
             serial_out("undefined");
             return;
-        } else {
+        }
+        else
+        {
             *var2 = peek(stack_pointer);
-            char* res = long_to_string(*var1 + *var2);
+            char *res = long_to_string(*var1 + *var2);
 
             free(var1);
             free(var2);
@@ -309,7 +348,9 @@ void command_add(int num_args, char** vars, stack *stack_pointer, dict* dictiona
             serial_out(res);
             return;
         }
-    } else {
+    }
+    else
+    {
         serial_out("argument error");
         return;
     }
@@ -328,15 +369,17 @@ void command_add(int num_args, char** vars, stack *stack_pointer, dict* dictiona
  *                      this is initialized in the main function
  *                      in serial.c
  */
-void command_pop(stack *stack_pointer) {
-    if (is_stack_empty(stack_pointer)) {
+void command_pop(stack *stack_pointer)
+{
+    if (is_stack_empty(stack_pointer))
+    {
         set_error("error: undefined variable, stack is empty", "pop");
         serial_out("undefined");
         return;
-    } 
+    }
 
-    int val  = pop(stack_pointer);
-    char* res = long_to_string(val);
+    int val = pop(stack_pointer);
+    char *res = long_to_string(val);
 
     set_error("success", "");
     serial_out(res);
@@ -344,8 +387,9 @@ void command_pop(stack *stack_pointer) {
 
 /**
  * Prints the status of the existing factoring processes
- */ 
-void command_ps() {
+ */
+void command_ps()
+{
     display_factors();
 }
 
@@ -356,14 +400,21 @@ void command_ps() {
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
-void command_result(int num_args, char** vars) {
-    if (num_args == 2) {
-        if (validate(vars[1], "id[0-9]+") == 0) {
+void command_result(int num_args, char **vars)
+{
+    if (num_args == 2)
+    {
+        if (validate(vars[1], "id[0-9]+") == 0)
+        {
             get_result(vars[1]);
-        } else {
+        }
+        else
+        {
             serial_out("invalid id");
         }
-    } else {
+    }
+    else
+    {
         serial_out("argument error");
     }
 }
@@ -385,32 +436,45 @@ void command_result(int num_args, char** vars) {
  * @param counter       the current task number
  * @param stack_pointer stack currently in use by the device,
  * @param dictionary    the dictionary currently in use by the device,
- */ 
-void command_factor(int num_args, char** vars, int counter, stack *stack_pointer, dict* dictionary) {
+ */
+void command_factor(int num_args, char **vars, int counter, stack *stack_pointer, dict *dictionary)
+{
     char id[16] = "id";
     snprintf(id, 16, "id%d", counter);
 
     int *var;
     var = malloc(sizeof(*var));
 
-    if (num_args == 2) {
-        if ((parse_int(vars[1], var) == 0)|| (query(dictionary, vars[1], var) == 0)) {
-            if(prepare_factor(*var, id) == 0) {
+    if (num_args == 2)
+    {
+        if ((parse_int(vars[1], var) == 0) || (query(dictionary, vars[1], var) == 0))
+        {
+            if (prepare_factor(*var, id) == 0)
+            {
                 serial_out(id);
-            } else {
+            }
+            else
+            {
                 serial_out("could not start task");
                 set_error("error: could not start task", "factor");
             }
         }
-    } else if (num_args < 2 && !is_stack_empty(stack_pointer)) {
+    }
+    else if (num_args < 2 && !is_stack_empty(stack_pointer))
+    {
         *var = peek(stack_pointer);
-        if (prepare_factor(*var, id) == 0) {
+        if (prepare_factor(*var, id) == 0)
+        {
             serial_out(id);
-        } else {
+        }
+        else
+        {
             serial_out("could not start task");
             set_error("error: could not start task", "factor");
         }
-    } else {
+    }
+    else
+    {
         set_error("error: undefined variable", "factor");
         serial_out("undefined");
     }

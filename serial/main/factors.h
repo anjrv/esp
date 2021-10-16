@@ -1,5 +1,5 @@
-#ifndef FACTORS_H_ 
-#define FACTORS_H_ 
+#ifndef FACTORS_H_
+#define FACTORS_H_
 
 #define MAIN_PRIORITY 0
 #define LOW_PRIORITY 1
@@ -8,8 +8,8 @@
 #define DELAY ((TickType_t)(50 / portTICK_PERIOD_MS))
 
 void initialize_factors();
-int prepare_factor(int value, char* id);
-void get_result(char* id);
+int prepare_factor(int value, char *id);
+void get_result(char *id);
 void display_factors();
 
 #endif

@@ -2,8 +2,8 @@
 #define VERSION_H_ 
 
 #define DEVELOPER_ID "s114"
-#define MAJOR 2 
-#define MINOR 4 
+#define MAJOR 3 
+#define MINOR 1 
 #define REVISION 0 
 
 /**
@@ -46,6 +46,10 @@
  * 
  * 2.4.0 - Functionality of add changed to what it was actually supposed to be
  *         ( I Can't Fucking Read )
+ * 
+ * 3.0.0 - Assignment 3 setup, implementing bluetooth sdkconfig
+ * 
+ * 3.1.0 - Including the bluetooth demo command to check connectivity
  */
 
 #endif

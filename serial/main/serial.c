@@ -10,22 +10,24 @@
 #include "utils.h"
 #include "commands.h"
 #include "factors.h"
+#include "client.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
 // between the main loop and response function
-dict* dictionary;
-stack* stack_pointer;
+dict *dictionary;
+stack *stack_pointer;
 int counter;
 char q[MSG_BUFFER_LENGTH];
-
 
 // serial_out(..) method assumes string is null-terminated but does not
 //	have the specification-mandated newline terminator.  This method applies
 //	the newline terminator and writes the string over the serial connection.
-void serial_out(const char* string) {
+void serial_out(const char *string)
+{
 	int end = strlen(string);
-	if (end >= MSG_BUFFER_LENGTH) {
+	if (end >= MSG_BUFFER_LENGTH)
+	{
 		// Error: Output too long.
 		return;
 	}
@@ -33,8 +35,8 @@ void serial_out(const char* string) {
 	// NOTE: Working spec requires max of 256 bytes containing a newline terminator.
 	//	Thus the storage buffer needs 256+1 bytes since we also need a null terminator
 	//	to form a valid string.
-	char msg_buffer[MSG_BUFFER_LENGTH+1];
-	memset(msg_buffer, 0, MSG_BUFFER_LENGTH+1);
+	char msg_buffer[MSG_BUFFER_LENGTH + 1];
+	memset(msg_buffer, 0, MSG_BUFFER_LENGTH + 1);
 	strcpy(msg_buffer, string);
 	msg_buffer[end] = '\n';
 	printf(msg_buffer);
@@ -47,61 +49,113 @@ void serial_out(const char* string) {
  * 
  * @param pvParameter function call parameter not used
  */
-void respond(void *pvParameter) {
-	char** split = NULL;
-	char* duplicate = strdup(q);
-	char* p = strtok(duplicate, " ");
-    int quant = 0;
+void respond(void *pvParameter)
+{
+	char **split = NULL;
+	char *duplicate = strdup(q);
+	char *p = strtok(duplicate, " ");
+	int quant = 0;
 
-    while(p) {
-        split = realloc(split, sizeof(char*) * ++quant);
-        split[quant-1] = p;
+	while (p)
+	{
+		split = realloc(split, sizeof(char *) * ++quant);
+		split[quant - 1] = p;
 
-        p = strtok(NULL, " ");
-    }
+		p = strtok(NULL, " ");
+	}
 
-    split = realloc(split, sizeof(char*) * (quant+1));
-    split[quant] = '\0';
+	split = realloc(split, sizeof(char *) * (quant + 1));
+	split[quant] = '\0';
 
 	// If there are no words present then
 	// we skip searching for a command
-	if (quant > 0) {
+	if (quant > 0)
+	{
 		// Cast command to uppercase to remove
 		// Case sensitivity
-		char* command = strupr(split[0]);
+		char *command = strupr(split[0]);
 
 		// "Switch" through available commands
-		if (strcmp(command, "PING") == 0) {
+		if (strcmp(command, "PING") == 0)
+		{
 			command_ping();
-		} else if (strcmp(command, "MAC") == 0) {
+		}
+		else if (strcmp(command, "MAC") == 0)
+		{
 			command_mac();
-		} else if (strcmp(command, "ID") == 0 ) {
+		}
+		else if (strcmp(command, "ID") == 0)
+		{
 			command_id();
-		} else if (strcmp(command, "VERSION") == 0) {
+		}
+		else if (strcmp(command, "VERSION") == 0)
+		{
 			command_version();
-		} else if (strcmp(command, "ERROR") == 0) {
+		}
+		else if (strcmp(command, "ERROR") == 0)
+		{
 			get_error();
-		} else if (strcmp(command, "STORE") == 0) {
+		}
+		else if (strcmp(command, "STORE") == 0)
+		{
 			command_store(quant, split, dictionary);
-		} else if (strcmp(command, "QUERY") == 0) {
+		}
+		else if (strcmp(command, "QUERY") == 0)
+		{
 			command_query(quant, split, dictionary);
-		} else if (strcmp(command, "PUSH") == 0) {
+		}
+		else if (strcmp(command, "PUSH") == 0)
+		{
 			command_push(quant, split, stack_pointer);
-		} else if (strcmp(command, "POP") == 0) {
+		}
+		else if (strcmp(command, "POP") == 0)
+		{
 			command_pop(stack_pointer);
-		} else if (strcmp(command, "ADD") == 0) {
+		}
+		else if (strcmp(command, "ADD") == 0)
+		{
 			command_add(quant, split, stack_pointer, dictionary);
-		} else if (strcmp(command, "PS") == 0) {
+		}
+		else if (strcmp(command, "PS") == 0)
+		{
 			command_ps();
-		} else if (strcmp(command, "RESULT") == 0) {
+		}
+		else if (strcmp(command, "RESULT") == 0)
+		{
 			command_result(quant, split);
-		} else if (strcmp(command, "FACTOR") == 0) {
+		}
+		else if (strcmp(command, "FACTOR") == 0)
+		{
 			command_factor(quant, split, counter++, stack_pointer, dictionary);
-		} else {
+		}
+		else if (strcmp(command, "BLUETOOTH") == 0)
+		{
+			int result_prep = data_client_prepare();
+			if (result_prep != 0)
+			{
+				serial_out("Bluetooth initialization failure");
+				return;
+			}
+
+			TaskHandle_t svc_worker;
+
+			xTaskCreatePinnedToCore(
+				worker,
+				"svc_worker",
+				2048,
+				NULL,
+				1,
+				&svc_worker,
+				tskNO_AFFINITY);
+		}
+		else
+		{
 			// Default case, command does not exist
 			serial_out("command error");
 		}
-	} else {
+	}
+	else
+	{
 		// No command input
 		serial_out("command error");
 	}
@@ -120,10 +174,12 @@ void respond(void *pvParameter) {
  * 
  * @param pvParameter function call parameter not used
  */
-void main_task(void *pvParameter) {
+void main_task(void *pvParameter)
+{
 	serial_out("firmware ready");
 
-	while (true) {
+	while (true)
+	{
 		int complete = 0;
 		int at = 0;
 		int whitespace = 0;
@@ -133,47 +189,65 @@ void main_task(void *pvParameter) {
 
 		memset(q, 0, MSG_BUFFER_LENGTH);
 
-		while (!complete) {
-			if (at >= 256) {
+		while (!complete)
+		{
+			if (at >= 256)
+			{
 				serial_out("input length exceeded");
 				break;
 			}
 			int result = fgetc(stdin);
 
-			if (at == 0 && ((char)result == ' ')) {
+			if (at == 0 && ((char)result == ' '))
+			{
 				leading_whitespace = 1;
 			}
 
-			if (result == EOF) {
+			if (result == EOF)
+			{
 				vTaskDelay(read_delay);
 				continue;
-			} else if ((char)result == '\n') {
-				if (whitespace) {
+			}
+			else if ((char)result == '\n')
+			{
+				if (whitespace)
+				{
 					trailing_whitespace = 1;
 				}
 
 				complete = true;
-			} else {
+			}
+			else
+			{
 				q[at++] = (char)result;
 			}
 
-			if ((char)result == ' ') {
-				if (whitespace) {
+			if ((char)result == ' ')
+			{
+				if (whitespace)
+				{
 					consecutive_whitespace = 1;
 				}
 				whitespace = 1;
-			} else {
+			}
+			else
+			{
 				whitespace = 0;
 			}
-
 		}
 
-		if (complete) {
-			if (leading_whitespace) {
+		if (complete)
+		{
+			if (leading_whitespace)
+			{
 				serial_out("command error");
-			} else if (consecutive_whitespace || trailing_whitespace) {
+			}
+			else if (consecutive_whitespace || trailing_whitespace)
+			{
 				serial_out("argument error");
-			} else {
+			}
+			else
+			{
 				xTaskCreatePinnedToCore(
 					&respond,
 					"respond",
@@ -193,18 +267,19 @@ void main_task(void *pvParameter) {
 /**
  * Entry point function, creates the main loop
  */
-void app_main(void) {
+void app_main(void)
+{
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
 	initialize_factors();
 	counter = 0;
 
-    xTaskCreate(
-        &main_task,    // - function ptr
-        "main_task",   // - arbitrary name
-        2048,          // - stack size [byte]
-        NULL,          // - optional data for task
-        MAIN_PRIORITY, // - priority of the main task
-        NULL		   // - handle to task (for control)
+	xTaskCreate(
+		&main_task,	   // - function ptr
+		"main_task",   // - arbitrary name
+		2048,		   // - stack size [byte]
+		NULL,		   // - optional data for task
+		MAIN_PRIORITY, // - priority of the main task
+		NULL		   // - handle to task (for control)
 	);
 }

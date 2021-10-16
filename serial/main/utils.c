@@ -18,17 +18,20 @@
  * @param str The string to be converted to an integer 
  * @param ptr The pointer that will store the result
  */
-int parse_int(char* str, int* ptr) {
+int parse_int(char *str, int *ptr)
+{
     char *endptr;
 
-    if (strcmp(str, "0") == 0) {
+    if (strcmp(str, "0") == 0)
+    {
         *ptr = 0;
 
         return 0;
     }
 
     long long x = strtoll(str, &endptr, 10);
-    if (x >= INT_MIN && x <= INT_MAX && endptr > str && x != 0) {
+    if (x >= INT_MIN && x <= INT_MAX && endptr > str && x != 0)
+    {
         int res = x;
         *ptr = res;
 
@@ -51,7 +54,8 @@ int parse_int(char* str, int* ptr) {
  * @return  A char array representation
  *          of x 
  */
-char* long_to_string(long x) {
+char *long_to_string(long x)
+{
     static char buffer[20];
 
     snprintf(buffer, 10, "%ld", x);

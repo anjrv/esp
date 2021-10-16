@@ -1,15 +1,16 @@
 #ifndef STACK_H_
-#define STACK_H_ 
+#define STACK_H_
 
 #define STACK_CAPACITY 32
 
-typedef struct {
-    int maxsize;    
+typedef struct
+{
+    int maxsize;
     int top;
     int *items;
 } stack;
- 
-stack* create_stack(int capacity);
+
+stack *create_stack(int capacity);
 int stack_size(stack *pt);
 int is_stack_empty(stack *pt);
 int is_stack_full(stack *pt);

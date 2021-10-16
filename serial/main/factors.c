@@ -17,11 +17,12 @@
 
 typedef struct node node;
 
-struct node {
-    char* id;
+struct node
+{
+    char *id;
     char state;
     int value;
-    char* factors;
+    char *factors;
 
     struct node *next;
 };
@@ -33,7 +34,8 @@ SemaphoreHandle_t head_access;
  * Initializes the linked list semaphore
  * to be used by factor functions
  */
-void initialize_factors() {
+void initialize_factors()
+{
     head_access = xSemaphoreCreateBinary();
     assert(head_access != NULL);
     xSemaphoreGive(head_access);
@@ -42,7 +44,8 @@ void initialize_factors() {
 /**
  * Helper function to check whether list is initialized or not
  */
-int is_empty() {
+int is_empty()
+{
     return head == NULL;
 }
 
@@ -57,21 +60,26 @@ int is_empty() {
  *         * -1 indicates that obtaining a semaphore failed
  *         * 0 indicates that insertion was a success
  */
-int insert(char* id, int value) {
-    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE) {
-		return -1;
-	}
+int insert(char *id, int value)
+{
+    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
 
     node *link = malloc(sizeof(node));
 
-    link->id = malloc(strlen(id)+ 1);
+    link->id = malloc(strlen(id) + 1);
     link->state = PENDING;
 
     // Same invalid factor as 1 so well keep -1
     // to indicate semaphore state
-    if (value == -1) {
+    if (value == -1)
+    {
         link->value = abs(value);
-    } else {
+    }
+    else
+    {
         link->value = value;
     }
 
@@ -96,41 +104,52 @@ int insert(char* id, int value) {
  *         * 1 indicates an invalid id
  *         * 0 indicates a success
  */
-int result(char* id) {
-    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE) {
-		return -1;
-	}
+int result(char *id)
+{
+    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
 
-    if (is_empty()) {
+    if (is_empty())
+    {
         serial_out("undefined");
         return 1;
     }
 
     node *curr = head;
 
-    while(strcmp(curr->id, id) != 0) {
-        if (curr->next == NULL) {
+    while (strcmp(curr->id, id) != 0)
+    {
+        if (curr->next == NULL)
+        {
             serial_out("undefined");
             return 1;
-        } else {
+        }
+        else
+        {
             curr = curr->next;
         }
     }
 
-    if (curr->state == COMPLETE0 || curr->state == COMPLETE1) {
+    if (curr->state == COMPLETE0 || curr->state == COMPLETE1)
+    {
         curr->state = COMPLETE1;
         serial_out(curr->factors);
-    } else {
+    }
+    else
+    {
         serial_out("incomplete");
     }
-
 
     xSemaphoreGive(head_access);
     return 0;
 }
 
-void get_result(char* id) {
-    while(result(id) == -1) {
+void get_result(char *id)
+{
+    while (result(id) == -1)
+    {
         vTaskDelay(DELAY);
     }
 }
@@ -145,21 +164,28 @@ void get_result(char* id) {
  *         * 1 indicates an invalid id
  *         * anything else is a valid number to be factored
  */
-int get(char* id) {
-    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE) {
-		return -1;
-	}
-   
-    if (is_empty()) {
+int get(char *id)
+{
+    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
+
+    if (is_empty())
+    {
         return 1;
     }
 
     node *curr = head;
 
-    while(strcmp(curr->id, id) != 0) {
-        if (curr->next == NULL) {
+    while (strcmp(curr->id, id) != 0)
+    {
+        if (curr->next == NULL)
+        {
             return 1;
-        } else {
+        }
+        else
+        {
             curr = curr->next;
         }
     }
@@ -181,27 +207,35 @@ int get(char* id) {
  *         * -1 indicates that obtaining a semaphore failed
  *         * 0 indicates that changing was a success
  */
-int change(char* id, char state, char* factors) {
-    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE) {
-		return -1;
-	}
+int change(char *id, char state, char *factors)
+{
+    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
 
-    if (is_empty()) {
+    if (is_empty())
+    {
         return 1;
     }
 
     node *curr = head;
 
-    while(strcmp(curr->id, id) != 0) {
-        if (curr->next == NULL) {
+    while (strcmp(curr->id, id) != 0)
+    {
+        if (curr->next == NULL)
+        {
             return 1;
-        } else {
+        }
+        else
+        {
             curr = curr->next;
         }
     }
 
-    if (factors != NULL) {
-        curr->factors = malloc(strlen(factors)+ 1);
+    if (factors != NULL)
+    {
+        curr->factors = malloc(strlen(factors) + 1);
         strcpy(curr->factors, factors);
     }
 
@@ -217,27 +251,40 @@ int change(char* id, char state, char* factors) {
  *         * -1 indicates that obtaining a semaphore failed
  *         * 0 indicates a successful exit
  */
-int display() {
-    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE) {
-		return -1;
-	}
+int display()
+{
+    if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
 
     struct node *ptr = head;
     char res[RESPONSE_LENGTH];
 
-    if (is_empty()) {
+    if (is_empty())
+    {
         serial_out("empty set");
-    } else {
-        while (ptr != NULL) {
+    }
+    else
+    {
+        while (ptr != NULL)
+        {
             memset(res, 0, RESPONSE_LENGTH);
 
-            if (ptr->state == ACTIVE) {
+            if (ptr->state == ACTIVE)
+            {
                 snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "active");
-            } else if (ptr->state == PENDING) {
+            }
+            else if (ptr->state == PENDING)
+            {
                 snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "pending");
-            } else if (ptr->state == COMPLETE0) {
+            }
+            else if (ptr->state == COMPLETE0)
+            {
                 snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "complete");
-            } else {
+            }
+            else
+            {
                 snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "complete*");
             }
 
@@ -253,8 +300,10 @@ int display() {
 /**
  * Print factor tasks out to serial
  */
-void display_factors() {
-    while (display() == -1) {
+void display_factors()
+{
+    while (display() == -1)
+    {
         vTaskDelay(DELAY);
     }
 }
@@ -265,9 +314,10 @@ void display_factors() {
  * @param pvParameter should be the id of the node that the function needs to work on
  *                    the memory of this pointer is freed at the end of factoring
  */
-void factor(void *pvParameter) {
-    char* id;
-    id = (char*)pvParameter;
+void factor(void *pvParameter)
+{
+    char *id;
+    id = (char *)pvParameter;
     int num = get(id);
 
     char res[RESPONSE_LENGTH];
@@ -275,50 +325,58 @@ void factor(void *pvParameter) {
     strcat(res, ":");
 
     // 0 and 1 are not valid requests, output just mirrors input for now to provide a number
-    if (num == 0) {
+    if (num == 0)
+    {
         strcat(res, " 0");
         change(id, COMPLETE0, res);
         free(id);
         vTaskDelete(NULL);
     }
 
-    if (num == 1) {
+    if (num == 1)
+    {
         strcat(res, " 1");
         change(id, COMPLETE0, res);
         free(id);
         vTaskDelete(NULL);
     }
 
-    if (num < 0) {
+    if (num < 0)
+    {
         // Is negative, use absolute
         strcat(res, " -1");
         num = abs(num);
     }
 
     // Repeat until odd number
-    while (num%2 == 0) {
+    while (num % 2 == 0)
+    {
         // Divisible by 2
         strcat(res, " 2");
-        num = num/2;
+        num = num / 2;
     }
 
-    for (int i = 3; i <= sqrt(num); i += 2) {
-        while (num % i == 0) {
+    for (int i = 3; i <= sqrt(num); i += 2)
+    {
+        while (num % i == 0)
+        {
             // Divisible by i
             strcat(res, " ");
             strcat(res, long_to_string(i));
-            num = num/i;
+            num = num / i;
         }
     }
 
-    if (num > 2) {
+    if (num > 2)
+    {
         // Remaining prime
         strcat(res, " ");
         strcat(res, long_to_string(num));
     }
 
     // Try write result to list
-    while (change(id, COMPLETE0, res) == -1) {
+    while (change(id, COMPLETE0, res) == -1)
+    {
         vTaskDelay(DELAY);
     }
 
@@ -335,28 +393,30 @@ void factor(void *pvParameter) {
  * 
  * @return the process exit state of the task creation
  */
-int prepare_factor(int value, char* id) {
+int prepare_factor(int value, char *id)
+{
     BaseType_t success;
-    char* tag = NULL;
+    char *tag = NULL;
     // Task frees this pointer before deletion
     tag = malloc(strlen(id) + 1);
     strcpy(tag, id);
 
-    while (insert(tag, value) == -1) {
+    while (insert(tag, value) == -1)
+    {
         vTaskDelay(DELAY);
     }
 
     success = xTaskCreatePinnedToCore(
-		&factor,
-		id,
-		4096,
-		(void*)tag,
-		LOW_PRIORITY,
-		NULL,
-		tskNO_AFFINITY
-	);
+        &factor,
+        id,
+        4096,
+        (void *)tag,
+        LOW_PRIORITY,
+        NULL,
+        tskNO_AFFINITY);
 
-    if (success == pdPASS) {
+    if (success == pdPASS)
+    {
         return 0;
     }
 
