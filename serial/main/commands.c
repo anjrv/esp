@@ -11,6 +11,7 @@
 #include "serial.h"
 #include "commands.h"
 #include "factors.h"
+#include "client.h"
 
 #define MSG_BUFFER_LENGTH 256
 
@@ -417,6 +418,72 @@ void command_result(int num_args, char **vars)
     {
         serial_out("argument error");
     }
+}
+
+void command_bt_connect(int num_args, char **vars)
+{
+    if (num_args != 3)
+    {
+        serial_out("argument error");
+        return;
+    }
+
+    if (active_connection)
+    {
+        set_error("error: invalid connect", "bt_connect");
+        serial_out("invalid connect.");
+        return;
+    }
+
+    strcpy(BT_DATA_SOURCE_DEVICE, vars[1]);
+    strcpy(BT_DATA_SOURCE_SERVICE, vars[2]);
+
+    int result = bt_scan_now();
+
+    if (result != 0) 
+    {
+        serial_out("connection failure.");
+        return;
+    }
+
+    serial_out("connection success.");
+}
+
+void command_bt_status()
+{
+    if (active_connection)
+    {   
+        serial_out("Connection: OPEN");
+
+        char device_buf[50];
+        snprintf(device_buf, sizeof(device_buf), "%s%s", "Device: ",BT_DATA_SOURCE_DEVICE);
+        serial_out(device_buf);
+
+        char service_buf[50];
+        snprintf(service_buf, sizeof(service_buf), "%s%s", "Service: ",BT_DATA_SOURCE_SERVICE);
+        serial_out(service_buf);
+
+        // TODO: Count pending tasks from data structure
+    }
+    else
+    {
+        serial_out("Connection: CLOSED");
+    }
+}
+
+void command_bt_close()
+{
+    if (active_connection)
+    { 
+        // TODO: Flag suicide for workers with data structure
+
+        bt_disconnect();
+        active_connection = 0;
+        serial_out("connection closed.");
+        return;
+    }
+
+    serial_out("invalid disconnect.");
 }
 
 /////////////////////////

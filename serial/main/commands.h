@@ -15,5 +15,8 @@ void command_add(int num_args, char **vars, stack *pt, dict *d);
 void command_ps();
 void command_result(int num_args, char **vars);
 void command_factor(int num_args, char **vars, int counter, stack *pt, dict *d);
+void command_bt_connect(int num_args, char **vars);
+void command_bt_status();
+void command_bt_close();
 
 #endif

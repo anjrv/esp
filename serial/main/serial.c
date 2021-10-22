@@ -128,25 +128,27 @@ void respond(void *pvParameter)
 		{
 			command_factor(quant, split, counter++, stack_pointer, dictionary);
 		}
-		else if (strcmp(command, "BLUETOOTH") == 0)
+		else if (strcmp(command, "BT_CONNECT") == 0)
 		{
-			int result_prep = data_client_prepare();
-			if (result_prep != 0)
-			{
-				serial_out("Bluetooth initialization failure");
-				return;
-			}
+			command_bt_connect(quant, split);
+			// TaskHandle_t svc_worker;
 
-			TaskHandle_t svc_worker;
-
-			xTaskCreatePinnedToCore(
-				worker,
-				"svc_worker",
-				2048,
-				NULL,
-				1,
-				&svc_worker,
-				tskNO_AFFINITY);
+			// xTaskCreatePinnedToCore(
+			// 	worker,
+			// 	"svc_worker",
+			// 	2048,
+			// 	NULL,
+			// 	1,
+			// 	&svc_worker,
+			// 	tskNO_AFFINITY);
+		}
+		else if (strcmp(command, "BT_STATUS") == 0)
+		{
+			command_bt_status();
+		}
+		else if (strcmp(command, "BT_CLOSE") == 0)
+		{
+			command_bt_close();
 		}
 		else
 		{
@@ -160,8 +162,10 @@ void respond(void *pvParameter)
 		serial_out("command error");
 	}
 
-	// I assume the rule for realloc is the same as it is for malloc
-	// We realloced the split variable to fit our tokens, now we free it
+	// Finish responding
+	// For some reason this didn't properly terminate in the main loop anymore
+	serial_out("");
+
 	free(split);
 	vTaskDelete(NULL); // Respond deletes itself when done
 }
@@ -194,6 +198,7 @@ void main_task(void *pvParameter)
 			if (at >= 256)
 			{
 				serial_out("input length exceeded");
+				serial_out("");
 				break;
 			}
 			int result = fgetc(stdin);
@@ -241,10 +246,12 @@ void main_task(void *pvParameter)
 			if (leading_whitespace)
 			{
 				serial_out("command error");
+				serial_out("");
 			}
 			else if (consecutive_whitespace || trailing_whitespace)
 			{
 				serial_out("argument error");
+				serial_out("");
 			}
 			else
 			{
@@ -259,8 +266,6 @@ void main_task(void *pvParameter)
 				);
 			}
 		}
-
-		serial_out("");
 	}
 }
 
@@ -269,6 +274,9 @@ void main_task(void *pvParameter)
  */
 void app_main(void)
 {
+	int setup = data_client_prepare();
+	if (setup != 0)
+		return;
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
 	initialize_factors();

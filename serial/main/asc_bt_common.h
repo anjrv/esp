@@ -1,9 +1,6 @@
 #ifndef BT_H_
 #define BT_H_
 
-#define BT_DATA_SOURCE_DEVICE "ASC_BT_DataSource"
-#define BT_DATA_SOURCE_SERVICE "ASC_BT_DataSourceSvc"
-
 /* 
 * A primitive data packet definition.
 * 

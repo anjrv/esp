@@ -18,8 +18,8 @@
 #include <esp_gap_bt_api.h>
 #include <esp_bt_device.h>
 #include <esp_spp_api.h>
-#include "asc_bt_common.h"
 
+#include "asc_bt_common.h"
 #include "client.h"
 #include "serial.h"
 #include "utils.h"
@@ -38,7 +38,6 @@
 QueueHandle_t bt_recv = NULL;
 EventGroupHandle_t events = NULL;
 
-// Bluetooth remote device data:
 esp_bd_addr_t remote_addr = {0};
 uint8_t remote_len = 0;
 char remote_name[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
@@ -101,6 +100,21 @@ int data_client_prepare()
         return 7;
 
     return 0;
+}
+
+int bt_scan_now()
+{
+    if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 30, 0) != ESP_OK)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+void bt_disconnect()
+{
+    esp_spp_disconnect(con_handle);
 }
 
 // Initializes a BluetoothPacket structure.
@@ -276,7 +290,6 @@ void data_client_bt_callback(esp_spp_cb_event_t A_event, esp_spp_cb_param_t *A_p
     case ESP_SPP_INIT_EVT:
         esp_bt_dev_set_device_name(BT_DATA_CLIENT_DEVICE);
         esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
-        esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 30, 0);
         break;
 
     case ESP_SPP_DISCOVERY_COMP_EVT:
@@ -289,9 +302,9 @@ void data_client_bt_callback(esp_spp_cb_event_t A_event, esp_spp_cb_param_t *A_p
         break;
 
     case ESP_SPP_OPEN_EVT:
+        active_connection = 1;
         con_handle = A_param->open.handle;
         xEventGroupSetBits(events, EVT_CONNECTED | EVT_WRITE_READY);
-        serial_out("Connection opened.");
         break;
 
     case ESP_SPP_DATA_IND_EVT:
@@ -320,7 +333,6 @@ void data_client_bt_callback(esp_spp_cb_event_t A_event, esp_spp_cb_param_t *A_p
         break;
 
     case ESP_SPP_CLOSE_EVT:
-        serial_out("Connection closed.");
         break;
 
     default:
