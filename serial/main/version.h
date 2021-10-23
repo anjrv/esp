@@ -3,8 +3,8 @@
 
 #define DEVELOPER_ID "s114"
 #define MAJOR 3 
-#define MINOR 1 
-#define REVISION 0 
+#define MINOR 2 
+#define REVISION 1 
 
 /**
  * VERSION HISTORY
@@ -50,6 +50,12 @@
  * 3.0.0 - Assignment 3 setup, implementing bluetooth sdkconfig
  * 
  * 3.1.0 - Including the bluetooth demo command to check connectivity
+ * 
+ * 3.2.0 - bt_connect, bt_status and bt_close commands
+ *         ( NOTE: currently connect only really checks whether the drivers allow it to scan )
+ * 
+ * 3.2.1 - Modification to serial function to prevent it adding a null terminator
+ *         even if one was previously present ( e.g. in the case of an snprintf string )
  */
 
 #endif

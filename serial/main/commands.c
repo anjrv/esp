@@ -12,6 +12,7 @@
 #include "commands.h"
 #include "factors.h"
 #include "client.h"
+#include "bt_tasks.h"
 
 #define MSG_BUFFER_LENGTH 256
 
@@ -440,7 +441,7 @@ void command_bt_connect(int num_args, char **vars)
 
     int result = bt_scan_now();
 
-    if (result != 0) 
+    if (result != 0)
     {
         serial_out("connection failure.");
         return;
@@ -452,15 +453,15 @@ void command_bt_connect(int num_args, char **vars)
 void command_bt_status()
 {
     if (active_connection)
-    {   
+    {
         serial_out("Connection: OPEN");
 
         char device_buf[50];
-        snprintf(device_buf, sizeof(device_buf), "%s%s", "Device: ",BT_DATA_SOURCE_DEVICE);
+        snprintf(device_buf, sizeof(device_buf), "%s%s", "Device: ", BT_DATA_SOURCE_DEVICE);
         serial_out(device_buf);
 
         char service_buf[50];
-        snprintf(service_buf, sizeof(service_buf), "%s%s", "Service: ",BT_DATA_SOURCE_SERVICE);
+        snprintf(service_buf, sizeof(service_buf), "%s%s", "Service: ", BT_DATA_SOURCE_SERVICE);
         serial_out(service_buf);
 
         // TODO: Count pending tasks from data structure
@@ -474,7 +475,7 @@ void command_bt_status()
 void command_bt_close()
 {
     if (active_connection)
-    { 
+    {
         // TODO: Flag suicide for workers with data structure
 
         bt_disconnect();
@@ -484,6 +485,58 @@ void command_bt_close()
     }
 
     serial_out("invalid disconnect.");
+}
+
+void command_data_create(int num_args, char **vars)
+{
+    if (num_args != 3)
+    {
+        serial_out("argument error");
+        return;
+    }
+
+    char tmp[33];
+    memset(tmp, '\0', sizeof(tmp));
+    strcpy(tmp, vars[2]);
+    if (!(strcmp(strupr(tmp), "NOISE") == 0 || strcmp(strupr(tmp), "BT_DEMO") == 0))
+    {
+        serial_out("invalid source.");
+        return;
+    }
+
+
+    memset(tmp, '\0', sizeof(tmp));
+    strcpy(tmp, vars[1]);
+    if (strcmp(strupr(tmp), "NOISE") == 0 || strcmp(strupr(tmp), "BT_DEMO") == 0)
+    {
+        serial_out("invalid name.");
+        return;
+    }
+
+    if (create_dataset(vars[1], vars[2]) != 0)
+    {
+        serial_out("invalid name.");
+        return;
+    }
+
+    serial_out("data set created.");
+}
+
+void command_data_destroy(int num_args, char **vars)
+{
+    if (num_args != 2)
+    {
+        serial_out("argument error");
+        return;
+    }
+
+    if (destroy_dataset(vars[1]) != 0)
+    {
+        serial_out("invalid name.");
+        return;
+    }
+
+    serial_out("data set destroyed.");
 }
 
 /////////////////////////

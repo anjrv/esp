@@ -19,7 +19,7 @@
 #include <esp_bt_device.h>
 #include <esp_spp_api.h>
 
-#include "asc_bt_common.h"
+#include "bt_tasks.h"
 #include "client.h"
 #include "serial.h"
 #include "utils.h"
@@ -267,6 +267,7 @@ void data_client_gap_callback(esp_bt_gap_cb_event_t A_event, esp_bt_gap_cb_param
                 {
                     memcpy(remote_addr, A_param->disc_res.bda, ESP_BD_ADDR_LEN);
                     esp_spp_start_discovery(remote_addr);
+                    // TODO: validate service
                     esp_bt_gap_cancel_discovery();
                     break;
                 }

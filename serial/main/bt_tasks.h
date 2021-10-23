@@ -29,4 +29,8 @@ typedef struct BluetoothPacket
 #define BT_FLAG_DAT 0x00FFFF00
 #define BT_FLAG_ERR 0x80000000
 
+void initialize_bt_tasks();
+int create_dataset(char *name, char *source);
+int destroy_dataset(char *name);
+
 #endif

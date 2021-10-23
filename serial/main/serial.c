@@ -11,6 +11,7 @@
 #include "commands.h"
 #include "factors.h"
 #include "client.h"
+#include "bt_tasks.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -38,7 +39,8 @@ void serial_out(const char *string)
 	char msg_buffer[MSG_BUFFER_LENGTH + 1];
 	memset(msg_buffer, 0, MSG_BUFFER_LENGTH + 1);
 	strcpy(msg_buffer, string);
-	msg_buffer[end] = '\n';
+	if (msg_buffer[end - 1] != '\n')
+		msg_buffer[end] = '\n';
 	printf(msg_buffer);
 	fflush(stdout);
 }
@@ -150,6 +152,12 @@ void respond(void *pvParameter)
 		{
 			command_bt_close();
 		}
+		else if (strcmp(command, "DATA_CREATE") == 0) {
+			command_data_create(quant, split);
+		}
+		else if (strcmp(command, "DATA_DESTROY") == 0) {
+			command_data_destroy(quant, split);
+		}
 		else
 		{
 			// Default case, command does not exist
@@ -161,10 +169,6 @@ void respond(void *pvParameter)
 		// No command input
 		serial_out("command error");
 	}
-
-	// Finish responding
-	// For some reason this didn't properly terminate in the main loop anymore
-	serial_out("");
 
 	free(split);
 	vTaskDelete(NULL); // Respond deletes itself when done
@@ -258,7 +262,7 @@ void main_task(void *pvParameter)
 				xTaskCreatePinnedToCore(
 					&respond,
 					"respond",
-					8192,
+					16384,
 					NULL,
 					HIGH_PRIORITY,
 					NULL,
@@ -266,6 +270,8 @@ void main_task(void *pvParameter)
 				);
 			}
 		}
+
+		serial_out("");
 	}
 }
 
@@ -277,8 +283,10 @@ void app_main(void)
 	int setup = data_client_prepare();
 	if (setup != 0)
 		return;
+
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
+	initialize_bt_tasks();
 	initialize_factors();
 	counter = 0;
 
