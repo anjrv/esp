@@ -369,13 +369,15 @@ void factor(void *pvParameter)
     // Repeat until odd number
     while (num % 2 == 0)
     {
+        vTaskDelay(DELAY);
         // Divisible by 2
         strcat(res, " 2");
         num = num / 2;
     }
 
     for (int i = 3; i <= sqrt(num); i += 2)
-    {
+    {   
+        vTaskDelay(DELAY);
         while (num % i == 0)
         {
             // Divisible by i
