@@ -480,36 +480,22 @@ void append_noise(void *pvParameter)
         iter = get_task(split[0]);
     }
 
-    char **rows = NULL;
     int i = 0;
+    int exists = 1;
 
     char buf[40];
-    while (i < iter - 1)
+    while (i < iter - 1 && exists)
     {
-        // Generate entries and store within task
-        rows = realloc(rows, sizeof(char *) * ++i);
-
+        vTaskDelay(DELAY);
         noise(buf);
-        rows[i - 1] = strdup(buf);
-    }
+        char *c = strdup(buf);
 
-    rows[i] = '\0';
+        if (add_entry(split[1], c) != 0)
+            exists = 0;
 
-    int exists = 1;
-    for (int idx = 0; idx < i; ++idx)
-    {
-        char *c = rows[idx];
-
-        if (exists)
-        {
-            if (add_entry(split[1], c) != 0)
-                exists = 0;
-        }
-
-        // free regardless
         free(c);
+        i++;
     }
-    free(rows);
 
     if (exists)
     {

@@ -142,12 +142,9 @@ int create_dataset(char *name, char *source)
     return res;
 }
 
-int remove_entries(SemaphoreHandle_t access, task_node *list)
+int remove_entries(task_node *list)
 {
-    if (xSemaphoreTake(access, WAIT_QUEUE) != pdTRUE)
-    {
-        return -1;
-    }
+    serial_out("kill");
 
     task_node *temp = list;
     while (list)
@@ -158,7 +155,6 @@ int remove_entries(SemaphoreHandle_t access, task_node *list)
         free(temp);
     }
 
-    xSemaphoreGive(access);
     return 0;
 }
 
@@ -171,11 +167,12 @@ int remove_dataset(char *name)
 
     if (data_head && strcmp(data_head->dataset, name) == 0)
     {
-        while (remove_entries(data_head->task_access, data_head->down) == -1)
+        while (xSemaphoreTake(data_head->task_access, WAIT_QUEUE) != pdTRUE)
         {
             vTaskDelay(DELAY);
         }
 
+        remove_entries(data_head->down);
         free(data_head->dataset);
         free(data_head->source);
         free(data_head->task_access);
@@ -204,11 +201,12 @@ int remove_dataset(char *name)
         {
             if (strcmp(tmp->dataset, name) == 0)
             {
-                while (remove_entries(tmp->task_access, tmp->down) == -1)
+                while (xSemaphoreTake(tmp->task_access, WAIT_QUEUE) != pdTRUE)
                 {
                     vTaskDelay(DELAY);
                 }
 
+                remove_entries(tmp->down);
                 free(tmp->dataset);
                 free(tmp->source);
                 free(tmp->task_access);
@@ -327,11 +325,10 @@ int add_entry(char *name, char *row)
                 tmp->down = link;
             }
 
-            xSemaphoreGive(tmp->task_access);
-
             tmp->memory += sizeof(task_node) + (strlen(row) + 1);
             tmp->entries++;
 
+            xSemaphoreGive(tmp->task_access);
             xSemaphoreGive(dataset_access);
 
             return 0;
