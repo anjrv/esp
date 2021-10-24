@@ -20,5 +20,6 @@ void command_bt_status();
 void command_bt_close();
 void command_data_create(int num_args, char **vars);
 void command_data_destroy(int num_args, char **vars);
+void command_data_info(int num_args, char **vars);
 
 #endif

@@ -7,6 +7,7 @@
 #include "factors.h"
 #include "serial.h"
 #include "utils.h"
+#include "noise.h"
 
 typedef struct data_node data_node;
 typedef struct task_node task_node;
@@ -16,6 +17,7 @@ struct data_node
     char *dataset;
     char *source;
     int entries;
+    int memory;
     SemaphoreHandle_t task_access;
 
     struct data_node *next;
@@ -81,6 +83,9 @@ int insert_dataset(char *name, char *source)
     strcpy(link->source, source);
 
     link->entries = 0;
+    // Initialize memory with all the crap we stick into the data set head node, can then just add to it whenever tasks append
+    // Values are the chars of the name and source strings (incl. null terminators), the entries and memory integers, the semaphore flag and the node pointers
+    link->memory = ((strlen(name) + 1) + (strlen(source) + 1) + (sizeof(int) * 2) + sizeof(data_node) + sizeof(task_node) + sizeof(SemaphoreHandle_t));
     link->task_access = xSemaphoreCreateBinary();
 
     link->down = NULL;
@@ -88,7 +93,6 @@ int insert_dataset(char *name, char *source)
     link->next = malloc(sizeof(data_node));
     link->next = data_head;
     data_head = link;
-
 
     xSemaphoreGive(link->task_access);
     xSemaphoreGive(dataset_access);
@@ -213,3 +217,79 @@ int destroy_dataset(char *name)
 
     return res;
 }
+
+int query_dataset(char *name)
+{
+    if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
+
+    data_node *tmp = data_head;
+
+    while (tmp != NULL)
+    {
+        if (strcmp(tmp->dataset, name) == 0)
+        {
+            char info_buf[50];
+
+            snprintf(info_buf, sizeof(info_buf), "%s %s", "Source:", tmp->source);
+            serial_out(info_buf);
+
+            snprintf(info_buf, sizeof(info_buf), "%s %d", "Entries:", tmp->entries);
+            serial_out(info_buf);
+
+            snprintf(info_buf, sizeof(info_buf), "%s %d %s", "Memory:", tmp->memory, "B");
+            serial_out(info_buf);
+
+            xSemaphoreGive(dataset_access);
+            return 0;
+        }
+
+        tmp = tmp->next;
+    }
+
+    xSemaphoreGive(dataset_access);
+    return -2;
+}
+
+int check_dataset(char *name)
+{
+    int res = query_dataset(name);
+
+    while (res == -1)
+    {
+        vTaskDelay(DELAY);
+        res = query_dataset(name);
+    }
+
+    return res;
+}
+
+
+
+int append_entries(char *name, int number)
+{
+    BaseType_t success;
+    char *tag = NULL;
+    // Task frees this pointer before deletion
+    tag = malloc(strlen(name) + 1);
+    strcpy(tag, name);
+
+    success = xTaskCreatePinnedToCore(
+        &factor,
+        id,
+        4096,
+        (void *)tag,
+        LOW_PRIORITY,
+        NULL,
+        tskNO_AFFINITY);
+
+    if (success == pdPASS)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+

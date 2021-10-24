@@ -32,5 +32,6 @@ typedef struct BluetoothPacket
 void initialize_bt_tasks();
 int create_dataset(char *name, char *source);
 int destroy_dataset(char *name);
+int check_dataset(char *name);
 
 #endif

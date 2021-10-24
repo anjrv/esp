@@ -12,6 +12,7 @@
 #include "factors.h"
 #include "client.h"
 #include "bt_tasks.h"
+#include "noise.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -158,6 +159,9 @@ void respond(void *pvParameter)
 		else if (strcmp(command, "DATA_DESTROY") == 0) {
 			command_data_destroy(quant, split);
 		}
+		else if (strcmp(command, "DATA_INFO") == 0) {
+			command_data_info(quant, split);
+		}
 		else
 		{
 			// Default case, command does not exist
@@ -288,6 +292,7 @@ void app_main(void)
 	stack_pointer = create_stack(STACK_CAPACITY);
 	initialize_bt_tasks();
 	initialize_factors();
+	initialize_noise();
 	counter = 0;
 
 	xTaskCreate(

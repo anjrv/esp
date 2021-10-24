@@ -504,7 +504,6 @@ void command_data_create(int num_args, char **vars)
         return;
     }
 
-
     memset(tmp, '\0', sizeof(tmp));
     strcpy(tmp, vars[1]);
     if (strcmp(strupr(tmp), "NOISE") == 0 || strcmp(strupr(tmp), "BT_DEMO") == 0)
@@ -537,6 +536,46 @@ void command_data_destroy(int num_args, char **vars)
     }
 
     serial_out("data set destroyed.");
+}
+
+void command_data_info(int num_args, char **vars)
+{
+    if (num_args != 2)
+    {
+        serial_out("argument error");
+        return;
+    }
+
+    char tmp[33];
+    memset(tmp, '\0', sizeof(tmp));
+    strcpy(tmp, vars[1]);
+
+    if (strcmp(strupr(tmp), "NOISE") == 0)
+    {
+        serial_out("Status: Available");
+        serial_out("Keys: a, b, c");
+        return;
+    }
+    else if (strcmp(strupr(tmp), "BT_DEMO") == 0)
+    {
+        memset(tmp, '\0', sizeof(tmp));
+        strcpy(tmp, BT_DATA_SOURCE_SERVICE);
+        if (strcmp(strupr(tmp), "BT_DEMO") == 0 && active_connection)
+        {
+            serial_out("Status: Available");
+        }
+        else
+        {
+            serial_out("Status: Unavailable");
+        }
+        serial_out("Keys: main");
+        return;
+    }
+    else
+    {
+        if (check_dataset(vars[1]) != 0)
+            serial_out("invalid name.");
+    }
 }
 
 /////////////////////////
