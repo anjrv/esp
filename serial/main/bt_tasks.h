@@ -33,5 +33,6 @@ void initialize_bt_tasks();
 int create_dataset(char *name, char *source);
 int destroy_dataset(char *name);
 int check_dataset(char *name);
+int get_source(char *name, char **ptr);
 
 #endif

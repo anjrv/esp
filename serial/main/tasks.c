@@ -4,15 +4,19 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "factors.h"
+#include "tasks.h"
 #include "serial.h"
 #include "utils.h"
+#include "noise.h"
+#include "bt_tasks.h"
 
 // Constants for easier storage of a function state
 #define ACTIVE 'A'
 #define PENDING 'P'
 #define COMPLETE0 'C'
 #define COMPLETE1 'X'
+#define NOISE 'N'
+#define BT_DEMO 'B'
 #define RESPONSE_LENGTH 128
 
 typedef struct node node;
@@ -20,9 +24,10 @@ typedef struct node node;
 struct node
 {
     char *id;
+    char *task;
     char state;
     int value;
-    char *factors;
+    char *results;
 
     struct node *next;
 };
@@ -34,7 +39,7 @@ SemaphoreHandle_t head_access;
  * Initializes the linked list semaphore
  * to be used by factor functions
  */
-void initialize_factors()
+void initialize_tasks()
 {
     head_access = xSemaphoreCreateBinary();
     assert(head_access != NULL);
@@ -54,13 +59,14 @@ int is_empty()
  * of the factoring linked list
  * 
  * @param id the id to use for the node
+ * @param task the type of task
  * @param value the value to be used for the node
  * 
  * @return the process exit state of the insertion attempt
  *         * -1 indicates that obtaining a semaphore failed
  *         * 0 indicates that insertion was a success
  */
-int insert(char *id, int value)
+int insert_task(char *id, char *task, int value)
 {
     if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
     {
@@ -70,6 +76,7 @@ int insert(char *id, int value)
     node *link = malloc(sizeof(node));
 
     link->id = malloc(strlen(id) + 1);
+    link->task = malloc(strlen(task) + 1);
     link->state = PENDING;
 
     // Same invalid factor as 1 so well keep -1
@@ -83,9 +90,10 @@ int insert(char *id, int value)
         link->value = value;
     }
 
-    link->factors = NULL;
+    link->results = NULL;
 
     strcpy(link->id, id);
+    strcpy(link->task, task);
 
     link->next = head;
     head = link;
@@ -135,7 +143,7 @@ int result(char *id)
     if (curr->state == COMPLETE0 || curr->state == COMPLETE1)
     {
         curr->state = COMPLETE1;
-        serial_out(curr->factors);
+        serial_out(curr->results);
     }
     else
     {
@@ -164,7 +172,7 @@ void get_result(char *id)
  *         * 1 indicates an invalid id
  *         * anything else is a valid number to be factored
  */
-int get(char *id)
+int get_task(char *id)
 {
     if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
     {
@@ -173,6 +181,7 @@ int get(char *id)
 
     if (is_empty())
     {
+        xSemaphoreGive(head_access);
         return 1;
     }
 
@@ -182,6 +191,7 @@ int get(char *id)
     {
         if (curr->next == NULL)
         {
+            xSemaphoreGive(head_access);
             return 1;
         }
         else
@@ -197,17 +207,17 @@ int get(char *id)
 }
 
 /**
- * Function to change a node of the factoring linked list
+ * Function to change a node of the task list
  * 
  * @param id the id to use for the node
  * @param state the state to update to
- * @param factors the factoring result ( if complete )
+ * @param results the results of the task
  * 
  * @return the process exit state of the attempt
  *         * -1 indicates that obtaining a semaphore failed
  *         * 0 indicates that changing was a success
  */
-int change(char *id, char state, char *factors)
+int change_task(char *id, char state, char *results)
 {
     if (xSemaphoreTake(head_access, WAIT_QUEUE) != pdTRUE)
     {
@@ -216,6 +226,7 @@ int change(char *id, char state, char *factors)
 
     if (is_empty())
     {
+        xSemaphoreGive(head_access);
         return 1;
     }
 
@@ -225,6 +236,7 @@ int change(char *id, char state, char *factors)
     {
         if (curr->next == NULL)
         {
+            xSemaphoreGive(head_access);
             return 1;
         }
         else
@@ -233,10 +245,10 @@ int change(char *id, char state, char *factors)
         }
     }
 
-    if (factors != NULL)
+    if (results != NULL)
     {
-        curr->factors = malloc(strlen(factors) + 1);
-        strcpy(curr->factors, factors);
+        curr->results = malloc(strlen(results) + 1);
+        strcpy(curr->results, results);
     }
 
     curr->state = state;
@@ -259,7 +271,6 @@ int display()
     }
 
     struct node *ptr = head;
-    char res[RESPONSE_LENGTH];
 
     if (is_empty())
     {
@@ -267,25 +278,26 @@ int display()
     }
     else
     {
+        char res[RESPONSE_LENGTH];
         while (ptr != NULL)
         {
             memset(res, 0, RESPONSE_LENGTH);
 
             if (ptr->state == ACTIVE)
             {
-                snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "active");
+                snprintf(res, RESPONSE_LENGTH, "%s %s %s", ptr->task, ptr->id, "active");
             }
             else if (ptr->state == PENDING)
             {
-                snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "pending");
+                snprintf(res, RESPONSE_LENGTH, "%s %s %s", ptr->task, ptr->id, "pending");
             }
             else if (ptr->state == COMPLETE0)
             {
-                snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "complete");
+                snprintf(res, RESPONSE_LENGTH, "%s %s %s", ptr->task, ptr->id, "complete");
             }
             else
             {
-                snprintf(res, RESPONSE_LENGTH, "%s %s %s", "factor", ptr->id, "complete*");
+                snprintf(res, RESPONSE_LENGTH, "%s %s %s", ptr->task, ptr->id, "complete*");
             }
 
             serial_out(res);
@@ -318,7 +330,13 @@ void factor(void *pvParameter)
 {
     char *id;
     id = (char *)pvParameter;
-    int num = get(id);
+
+    int num = get_task(id);
+    while (num == -1)
+    {
+        vTaskDelay(DELAY);
+        num = get_task(id);
+    }
 
     char res[RESPONSE_LENGTH];
     snprintf(res, 10, "%d", num);
@@ -328,7 +346,7 @@ void factor(void *pvParameter)
     if (num == 0)
     {
         strcat(res, " 0");
-        change(id, COMPLETE0, res);
+        change_task(id, COMPLETE0, res);
         free(id);
         vTaskDelete(NULL);
     }
@@ -336,7 +354,7 @@ void factor(void *pvParameter)
     if (num == 1)
     {
         strcat(res, " 1");
-        change(id, COMPLETE0, res);
+        change_task(id, COMPLETE0, res);
         free(id);
         vTaskDelete(NULL);
     }
@@ -375,7 +393,7 @@ void factor(void *pvParameter)
     }
 
     // Try write result to list
-    while (change(id, COMPLETE0, res) == -1)
+    while (change_task(id, COMPLETE0, res) == -1)
     {
         vTaskDelay(DELAY);
     }
@@ -401,7 +419,7 @@ int prepare_factor(int value, char *id)
     tag = malloc(strlen(id) + 1);
     strcpy(tag, id);
 
-    while (insert(tag, value) == -1)
+    while (insert_task(tag, "factor", value) == -1)
     {
         vTaskDelay(DELAY);
     }
@@ -409,11 +427,122 @@ int prepare_factor(int value, char *id)
     success = xTaskCreatePinnedToCore(
         &factor,
         id,
-        4096,
+        2048,
         (void *)tag,
         LOW_PRIORITY,
         NULL,
         tskNO_AFFINITY);
+
+    if (success == pdPASS)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+int get_data_row(char src, char *buf)
+{
+    if (src == NOISE)
+    {
+        noise(buf);
+        return 0;
+    }
+
+    return -1;
+}
+
+void append_noise(void *pvParameter)
+{
+    char *id;
+    id = (char *)pvParameter;
+
+    // Split to find dataset and ID
+    char **split = NULL;
+    char *p = strtok(id, " ");
+    int quant = 0;
+
+    while (p)
+    {
+        split = realloc(split, sizeof(char *) * ++quant);
+        split[quant - 1] = p;
+
+        p = strtok(NULL, " ");
+    }
+
+    split = realloc(split, sizeof(char *) * (quant + 1));
+    split[quant] = '\0';
+
+    int iter = get_task(split[0]);
+    while (iter == -1)
+    {
+        vTaskDelay(DELAY);
+        iter = get_task(split[0]);
+    }
+
+    char **rows = NULL;
+    int i = 0;
+
+    char buf[40];
+    while (i < iter - 1)
+    {
+        // Generate entries and store within task
+        rows = realloc(rows, sizeof(char *) * ++i);
+
+        noise(buf);
+        rows[i - 1] = strdup(buf);
+    }
+
+    rows[i] = '\0';
+
+    for (char *c = *rows; c; c = *++rows)
+    {
+        // Try append to dataset
+    }
+
+    snprintf(buf, sizeof(buf), "%d %s %s", i, "entries", "recovered");
+    while (change_task(split[0], COMPLETE0, buf) == -1)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    vTaskDelete(NULL);
+}
+
+int prepare_append(int value, char *id, char *dataset)
+{
+    char *ptr = NULL;
+    get_source(dataset, &ptr);
+
+    BaseType_t success;
+    char *tag = NULL;
+    tag = malloc((strlen(id) + strlen(dataset) + 2));
+    strcpy(tag, id);
+    strcat(tag, " ");
+    strcat(tag, dataset);
+
+    while (insert_task(id, "data_append", value) == -1)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    if (strcmp(strupr(ptr), "NOISE") == 0)
+    {
+        success = xTaskCreatePinnedToCore(
+            &append_noise,
+            id,
+            4096,
+            (void *)tag,
+            LOW_PRIORITY,
+            NULL,
+            tskNO_AFFINITY);
+    }
+    else
+    {
+        success = pdPASS;
+    }
+
+    free(ptr);
 
     if (success == pdPASS)
     {

@@ -4,7 +4,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "factors.h"
+#include "tasks.h"
 #include "serial.h"
 #include "utils.h"
 #include "noise.h"
@@ -59,6 +59,45 @@ int dataset_exists(char *name)
     }
 
     return 0;
+}
+
+int dataset_source(char *name, char **ptr)
+{
+    if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+    {
+        return -1;
+    }
+
+    data_node *tmp = data_head;
+
+    while (tmp != NULL)
+    {
+        if (strcmp(tmp->dataset, name) == 0)
+        {
+            char *res = malloc((strlen(tmp->source) + 1));
+            res = tmp->source;
+
+            *ptr = res;
+            return 0;
+        }
+
+        tmp = tmp->next;
+    }
+
+    return -2;
+}
+
+int get_source(char *name, char **ptr)
+{
+    int res = dataset_source(name, &ptr[0]);
+
+    while (res == -1)
+    {
+        vTaskDelay(DELAY);
+        res = dataset_source(name, &ptr[0]);
+    }
+
+    return res;
 }
 
 int insert_dataset(char *name, char *source)
@@ -265,31 +304,3 @@ int check_dataset(char *name)
 
     return res;
 }
-
-
-
-int append_entries(char *name, int number)
-{
-    BaseType_t success;
-    char *tag = NULL;
-    // Task frees this pointer before deletion
-    tag = malloc(strlen(name) + 1);
-    strcpy(tag, name);
-
-    success = xTaskCreatePinnedToCore(
-        &factor,
-        id,
-        4096,
-        (void *)tag,
-        LOW_PRIORITY,
-        NULL,
-        tskNO_AFFINITY);
-
-    if (success == pdPASS)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-

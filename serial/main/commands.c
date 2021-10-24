@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "serial.h"
 #include "commands.h"
-#include "factors.h"
+#include "tasks.h"
 #include "client.h"
 #include "bt_tasks.h"
 
@@ -637,4 +637,22 @@ void command_factor(int num_args, char **vars, int counter, stack *stack_pointer
         set_error("error: undefined variable", "factor");
         serial_out("undefined");
     }
+}
+
+void command_data_append(int num_args, char **vars, int counter)
+{
+    int *var;
+    var = malloc(sizeof(*var));
+
+    if (num_args != 3 || parse_int(vars[2], var) != 0)
+    {
+        serial_out("argument error");
+        free(var);
+        return;
+    }
+
+    char id[16] = "id";
+    snprintf(id, 16, "id%d", counter);
+
+    prepare_append(*var, id, vars[1]);
 }

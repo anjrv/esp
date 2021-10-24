@@ -9,7 +9,7 @@
 #include "dict.h"
 #include "utils.h"
 #include "commands.h"
-#include "factors.h"
+#include "tasks.h"
 #include "client.h"
 #include "bt_tasks.h"
 #include "noise.h"
@@ -162,6 +162,9 @@ void respond(void *pvParameter)
 		else if (strcmp(command, "DATA_INFO") == 0) {
 			command_data_info(quant, split);
 		}
+		else if (strcmp(command, "DATA_APPEND") == 0) {
+			command_data_append(quant, split, counter++);
+		}
 		else
 		{
 			// Default case, command does not exist
@@ -266,7 +269,7 @@ void main_task(void *pvParameter)
 				xTaskCreatePinnedToCore(
 					&respond,
 					"respond",
-					16384,
+					8192,
 					NULL,
 					HIGH_PRIORITY,
 					NULL,
@@ -291,7 +294,7 @@ void app_main(void)
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
 	initialize_bt_tasks();
-	initialize_factors();
+	initialize_tasks();
 	initialize_noise();
 	counter = 0;
 

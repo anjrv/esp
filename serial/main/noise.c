@@ -15,11 +15,11 @@ void initialize_noise()
  * Return a random integer up to lim
  * 
  * @param lim the bounds of the random number
- * @return a pseudo-random integer between -lim and lim
+ * @return a pseudo-random integer between 0 and lim
  */
 int random_int(int lim)
 {
-    return (rand() % lim) * (-1 * (rand() % 1));
+    return (rand() % lim);
 }
 
 /**
@@ -30,7 +30,7 @@ int random_int(int lim)
  */
 void noise(char* buf)
 {
-    char noise_buf[50];
+    char noise_buf[40];
     snprintf(noise_buf, sizeof(noise_buf), "%d %d %d", random_int(RAND_MAX), random_int(RAND_MAX), random_int(RAND_MAX));
 
     strcpy(buf, noise_buf);
