@@ -495,31 +495,52 @@ void append_noise(void *pvParameter)
 
     rows[i] = '\0';
 
-    for (char *c = *rows; c; c = *++rows)
+    int exists = 1;
+    for (int idx = 0; idx < i; ++idx)
     {
-        // Try append to dataset
+        char *c = rows[idx];
+
+        if (exists)
+        {
+            if (add_entry(split[1], c) != 0)
+                exists = 0;
+        }
+
+        // free regardless
+        free(c);
+    }
+    free(rows);
+
+    if (exists)
+    {
+        snprintf(buf, sizeof(buf), "%d %s %s", i, "entries", "recovered");
+    }
+    else
+    {
+        snprintf(buf, sizeof(buf), "%s", "early termination: set destroyed");
     }
 
-    snprintf(buf, sizeof(buf), "%d %s %s", i, "entries", "recovered");
     while (change_task(split[0], COMPLETE0, buf) == -1)
     {
         vTaskDelay(DELAY);
     }
+
+    free(split);
+    free(id);
 
     vTaskDelete(NULL);
 }
 
 int prepare_append(int value, char *id, char *dataset)
 {
-    char *ptr = NULL;
-    get_source(dataset, &ptr);
-
     BaseType_t success;
     char *tag = NULL;
     tag = malloc((strlen(id) + strlen(dataset) + 2));
     strcpy(tag, id);
     strcat(tag, " ");
     strcat(tag, dataset);
+
+    char *ptr = get_source(dataset);
 
     while (insert_task(id, "data_append", value) == -1)
     {

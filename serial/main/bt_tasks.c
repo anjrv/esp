@@ -29,7 +29,6 @@ struct task_node
     char *data;
 
     struct task_node *next;
-    struct data_node *up;
 };
 
 struct data_node *data_head = NULL;
@@ -61,43 +60,34 @@ int dataset_exists(char *name)
     return 0;
 }
 
-int dataset_source(char *name, char **ptr)
+char *dataset_source(char *name)
 {
-    if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
-    {
-        return -1;
-    }
-
     data_node *tmp = data_head;
 
     while (tmp != NULL)
     {
         if (strcmp(tmp->dataset, name) == 0)
         {
-            char *res = malloc((strlen(tmp->source) + 1));
-            res = tmp->source;
+            char *res = strdup(tmp->source);
+            xSemaphoreGive(dataset_access);
 
-            *ptr = res;
-            return 0;
+            return res;
         }
 
         tmp = tmp->next;
     }
 
-    return -2;
+    return NULL;
 }
 
-int get_source(char *name, char **ptr)
+char *get_source(char *name)
 {
-    int res = dataset_source(name, &ptr[0]);
-
-    while (res == -1)
+    while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
     {
         vTaskDelay(DELAY);
-        res = dataset_source(name, &ptr[0]);
     }
 
-    return res;
+    return dataset_source(name);
 }
 
 int insert_dataset(char *name, char *source)
@@ -115,20 +105,15 @@ int insert_dataset(char *name, char *source)
 
     data_node *link = malloc(sizeof(data_node));
 
-    link->dataset = malloc(strlen(name) + 1);
-    strcpy(link->dataset, name);
-
-    link->source = malloc(strlen(source) + 1);
-    strcpy(link->source, source);
-
+    link->dataset = strdup(name);
+    link->source = strdup(source);
     link->entries = 0;
     // Initialize memory with all the crap we stick into the data set head node, can then just add to it whenever tasks append
     // Values are the chars of the name and source strings (incl. null terminators), the entries and memory integers, the semaphore flag and the node pointers
-    link->memory = ((strlen(name) + 1) + (strlen(source) + 1) + (sizeof(int) * 2) + sizeof(data_node) + sizeof(task_node) + sizeof(SemaphoreHandle_t));
+    link->memory = ((strlen(name) + 1) + (strlen(source) + 1) + (sizeof(int) * 2) + sizeof(data_node) + sizeof(SemaphoreHandle_t));
     link->task_access = xSemaphoreCreateBinary();
 
     link->down = NULL;
-
     link->next = malloc(sizeof(data_node));
     link->next = data_head;
     data_head = link;
@@ -303,4 +288,58 @@ int check_dataset(char *name)
     }
 
     return res;
+}
+
+int add_entry(char *name, char *row)
+{
+    while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    data_node *tmp = data_head;
+
+    while (tmp != NULL)
+    {
+        if (strcmp(tmp->dataset, name) == 0)
+        {
+            while (xSemaphoreTake(tmp->task_access, WAIT_QUEUE) != pdTRUE)
+            {
+                vTaskDelay(DELAY);
+            }
+
+            task_node *entry = tmp->down;
+            task_node *link = malloc(sizeof(task_node));
+
+            link->data = strdup(row);
+            link->next = NULL;
+
+            if (entry)
+            {
+                while (entry->next != NULL)
+                {
+                    entry = entry->next;
+                }
+                entry->next = link;
+            }
+            else
+            {
+                tmp->down = link;
+            }
+
+            xSemaphoreGive(tmp->task_access);
+
+            tmp->memory += sizeof(task_node) + (strlen(row) + 1);
+            tmp->entries++;
+
+            xSemaphoreGive(dataset_access);
+
+            return 0;
+        }
+
+        tmp = tmp->next;
+    }
+
+    xSemaphoreGive(dataset_access);
+    return -2;
 }
