@@ -11,7 +11,7 @@
 #include "commands.h"
 #include "tasks.h"
 #include "client.h"
-#include "bt_tasks.h"
+#include "data_tasks.h"
 #include "noise.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
@@ -134,16 +134,6 @@ void respond(void *pvParameter)
 		else if (strcmp(command, "BT_CONNECT") == 0)
 		{
 			command_bt_connect(quant, split);
-			// TaskHandle_t svc_worker;
-
-			// xTaskCreatePinnedToCore(
-			// 	worker,
-			// 	"svc_worker",
-			// 	2048,
-			// 	NULL,
-			// 	1,
-			// 	&svc_worker,
-			// 	tskNO_AFFINITY);
 		}
 		else if (strcmp(command, "BT_STATUS") == 0)
 		{
@@ -153,17 +143,29 @@ void respond(void *pvParameter)
 		{
 			command_bt_close();
 		}
-		else if (strcmp(command, "DATA_CREATE") == 0) {
+		else if (strcmp(command, "DATA_CREATE") == 0)
+		{
 			command_data_create(quant, split);
 		}
-		else if (strcmp(command, "DATA_DESTROY") == 0) {
+		else if (strcmp(command, "DATA_DESTROY") == 0)
+		{
 			command_data_destroy(quant, split);
 		}
-		else if (strcmp(command, "DATA_INFO") == 0) {
+		else if (strcmp(command, "DATA_INFO") == 0)
+		{
 			command_data_info(quant, split);
 		}
-		else if (strcmp(command, "DATA_APPEND") == 0) {
+		else if (strcmp(command, "DATA_APPEND") == 0)
+		{
 			command_data_append(quant, split, counter++);
+		}
+		else if (strcmp(command, "DATA_RAW") == 0)
+		{
+			command_data_raw(quant, split);
+		}
+		else if (strcmp(command, "DATA_STAT") == 0)
+		{
+			command_data_stat(quant, split, counter++);
 		}
 		else
 		{
@@ -178,6 +180,7 @@ void respond(void *pvParameter)
 	}
 
 	free(split);
+	free(duplicate);
 	serial_out("");
 
 	vTaskDelete(NULL); // Respond deletes itself when done

@@ -31,7 +31,7 @@ int random_int(int lim)
 void noise(char* buf)
 {
     char noise_buf[40];
-    snprintf(noise_buf, sizeof(noise_buf), "%d %d %d", random_int(RAND_MAX), random_int(RAND_MAX), random_int(RAND_MAX));
+    snprintf(noise_buf, sizeof(noise_buf), "%d %d %d", random_int(256), random_int(256), random_int(256));
 
     strcpy(buf, noise_buf);
 }

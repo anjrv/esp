@@ -67,6 +67,10 @@
  *
  * 3.5.2 - Initial variant of data_append added
  *         ( NOTE: currently only supports noise source )
+ * 
+ * 3.5.3 - Basic data_append state checks ( name, source, num )
+ * 
+ * 3.5.4 - Some semaphore refactoring for tasks
  */
 
 #endif

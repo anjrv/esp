@@ -22,5 +22,7 @@ void command_data_create(int num_args, char **vars);
 void command_data_destroy(int num_args, char **vars);
 void command_data_info(int num_args, char **vars);
 void command_data_append(int num_args, char **vars, int counter);
+void command_data_raw(int num_args, char **vars);
+void command_data_stat(int num_args, char **vars, int counter);
 
 #endif

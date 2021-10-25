@@ -8,7 +8,7 @@
 #include "serial.h"
 #include "utils.h"
 #include "noise.h"
-#include "bt_tasks.h"
+#include "data_tasks.h"
 #include "client.h"
 
 // Constants for easier storage of a function state

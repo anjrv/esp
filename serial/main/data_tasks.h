@@ -35,5 +35,6 @@ int destroy_dataset(char *name);
 int check_dataset(char *name);
 char* get_source(char *name);
 int add_entry(char *name, char *row);
+int print_raw_data(char *name, int key);
 
 #endif

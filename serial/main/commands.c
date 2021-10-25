@@ -12,7 +12,7 @@
 #include "commands.h"
 #include "tasks.h"
 #include "client.h"
-#include "bt_tasks.h"
+#include "data_tasks.h"
 
 #define MSG_BUFFER_LENGTH 256
 
@@ -576,6 +576,65 @@ void command_data_info(int num_args, char **vars)
     }
 }
 
+void command_data_raw(int num_args, char **vars)
+{
+    if (num_args != 2)
+    {
+        serial_out("argument error");
+        return;
+    }
+
+    char *key;
+    key = strstr(vars[1], ".");
+
+    if (key)
+    {
+        char **split = NULL;
+        char *duplicate = strdup(vars[1]);
+        char *p = strtok(duplicate, ".");
+        int quant = 0;
+
+        while (p)
+        {
+            split = realloc(split, sizeof(char *) * ++quant);
+            split[quant - 1] = p;
+
+            p = strtok(NULL, ".");
+        }
+
+        split = realloc(split, sizeof(char *) * (quant + 1));
+        split[quant] = '\0';
+
+        if (strcmp(split[1], "a") == 0)
+        {
+            print_raw_data(split[0], 0);
+        }
+        else if (strcmp(split[1], "b") == 0)
+        {
+            print_raw_data(split[0], 1);
+        }
+        else if (strcmp(split[1], "c") == 0)
+        {
+            print_raw_data(split[0], 2);
+        }
+        else if (strcmp(split[1], "main") == 0)
+        {
+            print_raw_data(split[0], 3);
+        }
+        else
+        {
+            serial_out("invalid key");
+        }
+
+        free(split);
+        free(duplicate);
+    }
+    else
+    {
+        print_raw_data(vars[1], -1);
+    }
+}
+
 /////////////////////////
 // BACKGROUND COMMANDS //
 /////////////////////////
@@ -658,7 +717,8 @@ void command_data_append(int num_args, char **vars, int counter)
         return;
     }
 
-    if (*var < 1) {
+    if (*var < 1)
+    {
         serial_out("invalid request");
         free(var);
         return;
@@ -669,17 +729,25 @@ void command_data_append(int num_args, char **vars, int counter)
 
     int res = prepare_append(*var, id, vars[1]);
 
-    if (res == -3) {
+    if (res == -3)
+    {
         serial_out("source unavailable");
     }
 
-    if (res == -2) {
+    if (res == -2)
+    {
         serial_out("invalid name");
     }
 
-    if (res == 0) {
+    if (res == 0)
+    {
         serial_out(id);
     }
 
     free(var);
+}
+
+void command_data_stat(int num_args, char **vars, int counter)
+{
+    serial_out("datstat");
 }

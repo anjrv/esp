@@ -116,7 +116,7 @@ char *get_source(char *name)
         vTaskDelay(DELAY);
     }
 
-    char* res = dataset_source(name);
+    char *res = dataset_source(name);
     xSemaphoreGive(dataset_access);
 
     return res;
@@ -384,7 +384,7 @@ int check_dataset(char *name)
  * @return an int:
  *         -2 if the dataset to add to was not found, 
  *          0 for normal exit
- */ 
+ */
 int add_entry(char *name, char *row)
 {
     while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
@@ -434,6 +434,148 @@ int add_entry(char *name, char *row)
         tmp = tmp->next;
     }
 
+    xSemaphoreGive(dataset_access);
+    return -2;
+}
+
+/**
+ * Hell function to print raw info about the given dataset, 
+ * In general this will handle printing by itself and the return values
+ * are mostly for troubleshooting.
+ * 
+ * @param name the name of the dataset to print information about
+ * @param key an identifier value of a valid source key, if -1 is given all columns are printed
+ * @return an int:
+ *         -4 data lock state ( semaphore not available ), 
+ *         -2 dataset with the given name not found, 
+ *          0 normal exit state ( note: empty set is not an unusual exit currently ) 
+ */
+int print_raw_data(char *name, int key)
+{
+    if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+    {
+        serial_out("data lock");
+        return -4;
+    }
+
+    data_node *tmp = data_head;
+
+    while (tmp != NULL)
+    {
+        if (strcmp(tmp->dataset, name) == 0)
+        {
+            // No entries, dont even bother requesting task access
+            if (tmp->entries == 0)
+            {
+                serial_out("empty set");
+                xSemaphoreGive(dataset_access);
+
+                return 0;
+            }
+
+            // Some entries exist, queue for task access
+            if (xSemaphoreTake(tmp->task_access, WAIT_QUEUE) != pdTRUE)
+            {
+                serial_out("data lock");
+                return -4;
+            }
+
+            // Response buffer
+            char info_buf[50];
+
+            // Print header line
+            if (key == -1)
+            {
+                snprintf(info_buf, sizeof(info_buf), "%s:%s %s:%d", "request", tmp->dataset, "entries", tmp->entries);
+            }
+            else if (key == 3)
+            {
+                snprintf(info_buf, sizeof(info_buf), "%s:%s.%s %s:%d", "request", tmp->dataset, "main", "entries", tmp->entries);
+            }
+            else
+            {
+                snprintf(info_buf, sizeof(info_buf), "%s:%s.%s %s:%d", "request", tmp->dataset, key == 0 ? "a" : key == 1 ? "b"
+                                                                                                                          : "c",
+                         "entries", tmp->entries);
+            }
+
+            serial_out(info_buf);
+
+            int checksum = 0;
+
+            task_node *entry = tmp->down;
+            while (entry)
+            {
+                char **split = NULL;
+                char *duplicate = strdup(entry->data);
+                char *p = strtok(duplicate, " ");
+                int quant = 0;
+
+                while (p)
+                {
+                    split = realloc(split, sizeof(char *) * ++quant);
+                    split[quant - 1] = p;
+
+                    p = strtok(NULL, " ");
+                }
+
+                split = realloc(split, sizeof(char *) * (quant + 1));
+                split[quant] = '\0';
+
+                if (key == -1 || key == 3)
+                {
+                    if (quant > 1)
+                    {
+                        snprintf(info_buf, sizeof(info_buf), "%s:%s %s:%s %s:%s", "a", split[0], "b", split[1], "c", split[2]);
+                    }
+                    else
+                    {
+                        snprintf(info_buf, sizeof(info_buf), "%s:%s", "main", split[0]);
+                    }
+                }
+                else
+                {
+                    snprintf(info_buf, sizeof(info_buf), "%s:%s", key == 0 ? "a" : key == 1 ? "b"
+                                                                                            : "c",
+                             split[key]);
+                }
+
+                int *curr;
+                curr = malloc(sizeof(*curr));
+
+                if (key == -1 || key == 3)
+                {
+                    for (int idx = 0; idx < quant; ++idx)
+                    {
+                        parse_int(split[idx], curr);
+                        checksum += *curr;
+                    }
+                }
+                else
+                {
+                    parse_int(split[key], curr);
+                    checksum += *curr;
+                }
+
+                serial_out(info_buf);
+                free(curr);
+                free(split);
+                free(duplicate);
+                entry = entry->next;
+            }
+
+            snprintf(info_buf, sizeof(info_buf), "%s:%d", "CHK", checksum & 0xFF);
+            serial_out(info_buf);
+            xSemaphoreGive(tmp->task_access);
+            xSemaphoreGive(dataset_access);
+
+            return 0;
+        }
+
+        tmp = tmp->next;
+    }
+
+    serial_out("invalid name");
     xSemaphoreGive(dataset_access);
     return -2;
 }
