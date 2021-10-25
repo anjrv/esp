@@ -432,7 +432,7 @@ void command_bt_connect(int num_args, char **vars)
     if (active_connection)
     {
         set_error("error: invalid connect", "bt_connect");
-        serial_out("invalid connect.");
+        serial_out("invalid connect");
         return;
     }
 
@@ -443,11 +443,11 @@ void command_bt_connect(int num_args, char **vars)
 
     if (result != 0)
     {
-        serial_out("connection failure.");
+        serial_out("connection failure");
         return;
     }
 
-    serial_out("connection success.");
+    serial_out("connection success");
 }
 
 void command_bt_status()
@@ -476,15 +476,13 @@ void command_bt_close()
 {
     if (active_connection)
     {
-        // TODO: Flag suicide for workers with data structure
-
-        bt_disconnect();
         active_connection = 0;
-        serial_out("connection closed.");
+        bt_disconnect();
+        serial_out("connection closed");
         return;
     }
 
-    serial_out("invalid disconnect.");
+    serial_out("invalid disconnect");
 }
 
 void command_data_create(int num_args, char **vars)
@@ -500,7 +498,7 @@ void command_data_create(int num_args, char **vars)
     strcpy(tmp, vars[2]);
     if (!(strcmp(strupr(tmp), "NOISE") == 0 || strcmp(strupr(tmp), "BT_DEMO") == 0))
     {
-        serial_out("invalid source.");
+        serial_out("invalid source");
         return;
     }
 
@@ -508,17 +506,17 @@ void command_data_create(int num_args, char **vars)
     strcpy(tmp, vars[1]);
     if (strcmp(strupr(tmp), "NOISE") == 0 || strcmp(strupr(tmp), "BT_DEMO") == 0)
     {
-        serial_out("invalid name.");
+        serial_out("invalid name");
         return;
     }
 
     if (create_dataset(vars[1], vars[2]) != 0)
     {
-        serial_out("invalid name.");
+        serial_out("invalid name");
         return;
     }
 
-    serial_out("data set created.");
+    serial_out("data set created");
 }
 
 void command_data_destroy(int num_args, char **vars)
@@ -531,11 +529,11 @@ void command_data_destroy(int num_args, char **vars)
 
     if (destroy_dataset(vars[1]) != 0)
     {
-        serial_out("invalid name.");
+        serial_out("invalid name");
         return;
     }
 
-    serial_out("data set destroyed.");
+    serial_out("data set destroyed");
 }
 
 void command_data_info(int num_args, char **vars)
@@ -574,7 +572,7 @@ void command_data_info(int num_args, char **vars)
     else
     {
         if (check_dataset(vars[1]) != 0)
-            serial_out("invalid name.");
+            serial_out("invalid name");
     }
 }
 
@@ -639,6 +637,15 @@ void command_factor(int num_args, char **vars, int counter, stack *stack_pointer
     }
 }
 
+/**
+ * Attempts to create a worker to append data to a dataset
+ * 
+ * Prints the id of the worker process upon creation.
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ * @param counter       the current task number
+ */
 void command_data_append(int num_args, char **vars, int counter)
 {
     int *var;
@@ -651,8 +658,28 @@ void command_data_append(int num_args, char **vars, int counter)
         return;
     }
 
+    if (*var < 1) {
+        serial_out("invalid request");
+        free(var);
+        return;
+    }
+
     char id[16] = "id";
     snprintf(id, 16, "id%d", counter);
 
-    prepare_append(*var, id, vars[1]);
+    int res = prepare_append(*var, id, vars[1]);
+
+    if (res == -3) {
+        serial_out("source unavailable");
+    }
+
+    if (res == -2) {
+        serial_out("invalid name");
+    }
+
+    if (res == 0) {
+        serial_out(id);
+    }
+
+    free(var);
 }

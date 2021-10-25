@@ -3,8 +3,8 @@
 
 #define DEVELOPER_ID "s114"
 #define MAJOR 3 
-#define MINOR 2 
-#define REVISION 1 
+#define MINOR 5 
+#define REVISION 2 
 
 /**
  * VERSION HISTORY
@@ -56,6 +56,17 @@
  * 
  * 3.2.1 - Modification to serial function to prevent it adding a null terminator
  *         even if one was previously present ( e.g. in the case of an snprintf string )
+ * 
+ * 3.3.0 - Refactoring the functions contained in factors into more generic variants now found in tasks.c
+ * 
+ * 3.4.0 - Noise source generation added
+ * 
+ * 3.5.0 - Initial support for the creation of datasets ( these functions are generally in bt_tasks )
+ * 
+ * 3.5.1 - Generic variant of data_info and data_destroy added
+ *
+ * 3.5.2 - Initial variant of data_append added
+ *         ( NOTE: currently only supports noise source )
  */
 
 #endif

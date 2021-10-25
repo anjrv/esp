@@ -178,6 +178,8 @@ void respond(void *pvParameter)
 	}
 
 	free(split);
+	serial_out("");
+
 	vTaskDelete(NULL); // Respond deletes itself when done
 }
 
@@ -277,8 +279,6 @@ void main_task(void *pvParameter)
 				);
 			}
 		}
-
-		serial_out("");
 	}
 }
 

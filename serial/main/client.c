@@ -23,6 +23,8 @@
 #include "client.h"
 #include "serial.h"
 #include "utils.h"
+#include "noise.h"
+#include "tasks.h"
 
 // Blocks, delays and waits.
 #define WAIT_MAX UINT32_MAX
@@ -123,6 +125,81 @@ BluetoothPacket init_packet()
     BluetoothPacket out;
     memset(&out, 0, sizeof(BluetoothPacket));
     return out;
+}
+
+/**
+ * Dataset worker that fetches from the noise source. 
+ * 
+ * Because noise is locally available we don't concern ourselves with storing rows 
+ * within the function itself, we simply attempt to get a row of noise and then request 
+ * that it be appended to the dataset, any semaphore acquisition is waited for.
+ * 
+ * @param pvParameter in this case we take in a composite char* pointer which gives us
+ *                    both the dataset we should append to and the ID of the task for state management
+ */
+void append_bt(void *pvParameter)
+{
+    char *id;
+    id = (char *)pvParameter;
+
+    // Split to find dataset and ID
+    char **split = NULL;
+    char *p = strtok(id, " ");
+    int quant = 0;
+
+    while (p)
+    {
+        split = realloc(split, sizeof(char *) * ++quant);
+        split[quant - 1] = p;
+
+        p = strtok(NULL, " ");
+    }
+
+    split = realloc(split, sizeof(char *) * (quant + 1));
+    split[quant] = '\0';
+
+    int iter = get_task(split[0]);
+    while (iter == -1)
+    {
+        vTaskDelay(DELAY);
+        iter = get_task(split[0]);
+    }
+
+    int i = 0;
+    int exists = 1;
+
+    char buf[40];
+    while (i < iter - 1 && exists)
+    {
+        vTaskDelay(DELAY);
+        noise(buf);
+        char *c = strdup(buf);
+
+        if (add_entry(split[1], c) != 0)
+            exists = 0;
+
+        free(c);
+        i++;
+    }
+
+    if (exists)
+    {
+        snprintf(buf, sizeof(buf), "%d %s %s", i, "entries", "recovered");
+    }
+    else
+    {
+        snprintf(buf, sizeof(buf), "%s", "early termination: set destroyed");
+    }
+
+    while (change_task(split[0], COMPLETE0, buf) == -1)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    free(split);
+    free(id);
+
+    vTaskDelete(NULL);
 }
 
 // Writes a single packet over the Bluetooth connection.  Does not perform

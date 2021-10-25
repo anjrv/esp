@@ -6,7 +6,7 @@
 int data_client_prepare();
 int bt_scan_now();
 void bt_disconnect();
-void worker(void *parameters);
+void append_bt(void *parameters);
 
 char BT_DATA_SOURCE_DEVICE[32];
 char BT_DATA_SOURCE_SERVICE[32];

@@ -45,6 +45,16 @@ void initialize_bt_tasks()
     xSemaphoreGive(dataset_access);
 }
 
+/**
+ * Helper function to validate whether a dataset 
+ * with the given name identifier exists. 
+ *
+ * This does not check whether it has 
+ * the dataset_access semaphore, it needs to be 
+ * obtained by the calling function before use
+ * 
+ * @param name the name of the dataset to look for
+ */
 int dataset_exists(char *name)
 {
     data_node *tmp = data_head;
@@ -60,6 +70,17 @@ int dataset_exists(char *name)
     return 0;
 }
 
+/**
+ * Helper function to find the listed source of a 
+ * given dataset. 
+ *
+ * This does not check whether it has 
+ * the dataset_access semaphore, it needs to be 
+ * obtained by the calling function before use
+ * 
+ * @param name the name of the dataset to look for
+ * @return a memory allocated copy of the source
+ */
 char *dataset_source(char *name)
 {
     data_node *tmp = data_head;
@@ -69,8 +90,6 @@ char *dataset_source(char *name)
         if (strcmp(tmp->dataset, name) == 0)
         {
             char *res = strdup(tmp->source);
-            xSemaphoreGive(dataset_access);
-
             return res;
         }
 
@@ -80,6 +99,16 @@ char *dataset_source(char *name)
     return NULL;
 }
 
+/**
+ * Wrapper function to obtain the name of the source for a given dataset
+ * Provides a semaphore waiting loop. 
+ * 
+ * The source obtained from this function is a memory allocated copy 
+ * and must be freed by the caller.
+ * 
+ * @param the name of the dataset to look for
+ * @return a memory allocated copy of the source
+ */
 char *get_source(char *name)
 {
     while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
@@ -87,9 +116,23 @@ char *get_source(char *name)
         vTaskDelay(DELAY);
     }
 
-    return dataset_source(name);
+    char* res = dataset_source(name);
+    xSemaphoreGive(dataset_access);
+
+    return res;
 }
 
+/**
+ * Creates an empty dataset, gives it a source 
+ * and attempts to prepend it to the list of datasets
+ * 
+ * @param name the name of the dataset
+ * @param source the source the dataset uses
+ * @return an int:
+ *         -1 for failure to obtain dataset semaphore, 
+ *         -2 if a dataset with the given name already exists, 
+ *          0 for normal exit
+ */
 int insert_dataset(char *name, char *source)
 {
     if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
@@ -127,7 +170,9 @@ int insert_dataset(char *name, char *source)
  * Attempts to create a new empty dataset with the given name
  * 
  * @param name the name to give the new dataset
- * @return 0 if creation was successful, -2 if the name already exists 
+ * * @return an int:
+ *           -2 if a dataset with the given name already exists, 
+ *            0 for normal exit
  */
 int create_dataset(char *name, char *source)
 {
@@ -142,10 +187,16 @@ int create_dataset(char *name, char *source)
     return res;
 }
 
+/**
+ * Helper function to free the memory of a list
+ * of dataset entries
+ * 
+ * @param list the first entry in the dataset
+ *             ( represented by data_node->down )
+ * @return 0 upon successful exit
+ */
 int remove_entries(task_node *list)
 {
-    serial_out("kill");
-
     task_node *temp = list;
     while (list)
     {
@@ -158,6 +209,15 @@ int remove_entries(task_node *list)
     return 0;
 }
 
+/**
+ * Attempts to remove an existing dataset
+ * 
+ * @param name the name of the dataset
+ * @return an int:
+ *         -1 for failure to obtain dataset semaphore, 
+ *         -2 if a dataset with the given name was not found,  
+ *          0 for normal exit
+ */
 int remove_dataset(char *name)
 {
     if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
@@ -227,6 +287,15 @@ int remove_dataset(char *name)
     return -2;
 }
 
+/**
+ * Wrapper function to remove a given dataset, 
+ * provides a semaphore waiting loop
+ * 
+ * @param name the name of the dataset to remove
+ * @return an int:
+ *         -2 if a dataset with the given name was not found,  
+ *          0 for normal exit
+ */
 int destroy_dataset(char *name)
 {
     int res = remove_dataset(name);
@@ -240,6 +309,15 @@ int destroy_dataset(char *name)
     return res;
 }
 
+/**
+ * Attempts to obtain information about a dataset 
+ * 
+ * @param name the name of the dataset
+ * @return an int:
+ *         -1 for failure to obtain dataset semaphore, 
+ *         -2 if a dataset with the given name was not found, 
+ *          0 for normal exit
+ */
 int query_dataset(char *name)
 {
     if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
@@ -275,6 +353,15 @@ int query_dataset(char *name)
     return -2;
 }
 
+/**
+ * Wrapper function to query a given dataset, 
+ * provides a semaphore waiting loop
+ * 
+ * @param name the name of the dataset to get info from 
+ * @return an int:
+ *         -2 if a dataset with the given name was not found, 
+ *          0 for normal exit
+ */
 int check_dataset(char *name)
 {
     int res = query_dataset(name);
@@ -288,6 +375,16 @@ int check_dataset(char *name)
     return res;
 }
 
+/**
+ * Attempts to insert an entry into a given dataset,
+ * provides it's own semaphore wait loops. 
+ * 
+ * @param name the name of the dataset to append to
+ * @param row the row of information to append
+ * @return an int:
+ *         -2 if the dataset to add to was not found, 
+ *          0 for normal exit
+ */ 
 int add_entry(char *name, char *row)
 {
     while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)

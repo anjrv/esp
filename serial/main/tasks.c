@@ -9,12 +9,9 @@
 #include "utils.h"
 #include "noise.h"
 #include "bt_tasks.h"
+#include "client.h"
 
 // Constants for easier storage of a function state
-#define ACTIVE 'A'
-#define PENDING 'P'
-#define COMPLETE0 'C'
-#define COMPLETE1 'X'
 #define NOISE 'N'
 #define BT_DEMO 'B'
 #define RESPONSE_LENGTH 128
@@ -376,7 +373,7 @@ void factor(void *pvParameter)
     }
 
     for (int i = 3; i <= sqrt(num); i += 2)
-    {   
+    {
         vTaskDelay(DELAY);
         while (num % i == 0)
         {
@@ -454,6 +451,16 @@ int get_data_row(char src, char *buf)
     return -1;
 }
 
+/**
+ * Dataset worker that fetches from the noise source. 
+ * 
+ * Because noise is locally available we don't concern ourselves with storing rows 
+ * within the function itself, we simply attempt to get a row of noise and then request 
+ * that it be appended to the dataset, any semaphore acquisition is waited for.
+ * 
+ * @param pvParameter in this case we take in a composite char* pointer which gives us
+ *                    both the dataset we should append to and the ID of the task for state management
+ */
 void append_noise(void *pvParameter)
 {
     char *id;
@@ -486,7 +493,7 @@ void append_noise(void *pvParameter)
     int exists = 1;
 
     char buf[40];
-    while (i < iter - 1 && exists)
+    while (i < iter && exists)
     {
         vTaskDelay(DELAY);
         noise(buf);
@@ -519,6 +526,23 @@ void append_noise(void *pvParameter)
     vTaskDelete(NULL);
 }
 
+/**
+ * Entry point function to create an append task with the given
+ * value ( in this case it is used as the amount of rows to try fetch ) 
+ * current incremental id and the dataset to append rows to. 
+ * 
+ * A worker thread will be created according to the source the dataset uses
+ * 
+ * @param value the number of rows to try fetch ( NOTE: rows < value )
+ * @param id the current task id
+ * @param dataset the dataset to append to
+ * 
+ * @return an id: 
+ *         1 if creating the task was unsuccessful, this indicates lack of memory, 
+ *        -2 a source was not found ( dataset does not exist ), 
+ *        -3 source is unavailable ( bt_demo with no connection ), 
+ *         0 task successfully created, 
+ */
 int prepare_append(int value, char *id, char *dataset)
 {
     BaseType_t success;
@@ -529,6 +553,13 @@ int prepare_append(int value, char *id, char *dataset)
     strcat(tag, dataset);
 
     char *ptr = get_source(dataset);
+
+    if (ptr == NULL)
+    {
+        // No datasource, dont create task
+        // Do not free the null pointer
+        return -2;
+    }
 
     while (insert_task(id, "data_append", value) == -1)
     {
@@ -548,9 +579,21 @@ int prepare_append(int value, char *id, char *dataset)
     }
     else
     {
-        success = pdPASS;
+        // No source
+        if (!active_connection)
+            return -3;
+
+        success = xTaskCreatePinnedToCore(
+            &append_bt,
+            id,
+            4096,
+            (void *)tag,
+            LOW_PRIORITY,
+            NULL,
+            tskNO_AFFINITY);
     }
 
+    // Free the requested copy of the dataset source
     free(ptr);
 
     if (success == pdPASS)
