@@ -558,6 +558,7 @@ int prepare_append(int value, char *id, char *dataset)
     {
         // No datasource, dont create task
         // Do not free the null pointer
+        free(tag);
         return -2;
     }
 
@@ -571,7 +572,7 @@ int prepare_append(int value, char *id, char *dataset)
         success = xTaskCreatePinnedToCore(
             &append_noise,
             id,
-            4096,
+            2048,
             (void *)tag,
             LOW_PRIORITY,
             NULL,
@@ -583,6 +584,7 @@ int prepare_append(int value, char *id, char *dataset)
         if (!active_connection)
             return -3;
 
+        // Give BT append more memory to store rows
         success = xTaskCreatePinnedToCore(
             &append_bt,
             id,
@@ -595,6 +597,50 @@ int prepare_append(int value, char *id, char *dataset)
 
     // Free the requested copy of the dataset source
     free(ptr);
+
+    if (success == pdPASS)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+int prepare_stat(int value, char *id, char *dataset)
+{
+    BaseType_t success;
+    char *tag = NULL;
+    tag = malloc((strlen(id) + strlen(dataset) + 2));
+    strcpy(tag, id);
+    strcat(tag, " ");
+    strcat(tag, dataset);
+
+    // This mostly provides a scuffed way to check if the dataset is present
+    char *ptr = get_source(dataset);
+    if (ptr == NULL)
+    {
+        // No datasource, dont create task
+        // Do not free the null pointer
+        free(tag);
+        return -2;
+    }
+
+    free(ptr);
+
+    // Value in this case is the index of the column
+    while (insert_task(id, "data_stat", value) == -1)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    success = xTaskCreatePinnedToCore(
+        &parse_dataset,
+        id,
+        2048,
+        (void *)tag,
+        LOW_PRIORITY,
+        NULL,
+        tskNO_AFFINITY);
 
     if (success == pdPASS)
     {

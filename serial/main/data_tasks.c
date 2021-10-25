@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
@@ -578,4 +579,186 @@ int print_raw_data(char *name, int key)
     serial_out("invalid name");
     xSemaphoreGive(dataset_access);
     return -2;
+}
+
+/**
+ * Comparison function for sorting purposes
+ */
+int compare(const void *a, const void *b)
+{
+    int int_a = *((int *)a);
+    int int_b = *((int *)b);
+
+    if (int_a == int_b)
+        return 0;
+    else if (int_a < int_b)
+        return -1;
+    else
+        return 1;
+}
+
+/**
+ * Dataset worker that calculates values from a dataset 
+ * 
+ * @param pvParameter in this case we take in a composite char* pointer which gives us
+ *                    both the dataset we should append to and the ID of the task for state management
+ */
+void parse_dataset(void *pvParameter)
+{
+    char *id;
+    id = (char *)pvParameter;
+
+    // Split to find dataset and ID
+    char **split = NULL;
+    char *p = strtok(id, " ");
+    int quant = 0;
+
+    while (p)
+    {
+        split = realloc(split, sizeof(char *) * ++quant);
+        split[quant - 1] = p;
+
+        p = strtok(NULL, " ");
+    }
+
+    split = realloc(split, sizeof(char *) * (quant + 1));
+    split[quant] = '\0';
+
+    int col = get_task(split[0]);
+    while (col == -1)
+    {
+        vTaskDelay(DELAY);
+        col = get_task(split[0]);
+    }
+
+    int exists = 0;
+    int entries = 0;
+    while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    data_node *hed = data_head;
+
+    while (hed != NULL)
+    {
+        if (strcmp(hed->dataset, split[1]) == 0)
+        {
+            exists = 1;
+            entries = hed->entries;
+        }
+
+        hed = hed->next;
+    }
+
+    xSemaphoreGive(dataset_access);
+
+    char buf[50];
+
+    serial_out(long_to_string(exists));
+
+    if (exists)
+    {
+        char **row;
+        char *row_val;
+        int entryvals[entries];
+        int *curr;
+        curr = malloc(sizeof(*curr));
+
+        int total = 0;
+        int curr_min = INT_MAX;
+        int curr_max = INT_MIN;
+
+        int iter = 0;
+        while (exists && iter < entries)
+        {
+
+            vTaskDelay(DELAY);
+
+            if (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+            {
+                continue;
+            }
+
+            row = NULL;
+            row_val = NULL;
+
+            hed = data_head;
+
+            exists = 0;
+            while (hed != NULL)
+            {
+                if (strcmp(split[1], hed->dataset) == 0)
+                {
+                    exists = 1;
+                    while (xSemaphoreTake(hed->task_access, WAIT_QUEUE) != pdTRUE)
+                    {
+                        vTaskDelay(DELAY);
+                    }
+
+                    task_node *temp = hed->down;
+
+                    for (int idx = 0; idx < iter; idx++)
+                    {
+                        temp = temp->next;
+                    }
+
+                    row_val = strdup(temp->data);
+                    xSemaphoreGive(hed->task_access);
+
+                    char *d = strtok(row_val, " ");
+                    quant = 0;
+
+                    while (d)
+                    {
+                        row = realloc(row, sizeof(char *) * ++quant);
+                        row[quant - 1] = d;
+
+                        d = strtok(NULL, " ");
+                    }
+
+                    row = realloc(row, sizeof(char *) * (quant + 1));
+                    row[quant] = '\0';
+
+                    parse_int(row[col], curr);
+                    entryvals[iter] = *curr;
+
+                    if (*curr > curr_max)
+                        curr_max = *curr;
+
+                    if (*curr < curr_min)
+                        curr_min = *curr;
+
+                    total += *curr;
+
+                    free(row);
+                    free(row_val);
+                    iter++;
+                    break;
+                }
+
+                hed = hed->next;
+            }
+
+            xSemaphoreGive(dataset_access);
+        }
+
+        if (exists)
+            snprintf(buf, sizeof(buf), "%s %d %s %d", "mean:", total / entries, "stop crying:", entryvals[0]);
+
+        free(curr);
+    }
+
+    if (!exists)
+        snprintf(buf, sizeof(buf), "%s", "early termination: set destroyed");
+
+    while (change_task(split[0], COMPLETE0, buf) == -1)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    free(split);
+    free(id);
+
+    vTaskDelete(NULL);
 }

@@ -71,6 +71,8 @@
  * 3.5.3 - Basic data_append state checks ( name, source, num )
  * 
  * 3.5.4 - Some semaphore refactoring for tasks
+ * 
+ * 3.6.0 - data_raw added
  */
 
 #endif

@@ -749,5 +749,62 @@ void command_data_append(int num_args, char **vars, int counter)
 
 void command_data_stat(int num_args, char **vars, int counter)
 {
-    serial_out("datstat");
+    if (num_args != 2)
+    {
+        serial_out("argument error");
+        return;
+    }
+
+    char *key;
+    key = strstr(vars[1], ".");
+
+    if (key)
+    {
+        char **split = NULL;
+        char *duplicate = strdup(vars[1]);
+        char *p = strtok(duplicate, ".");
+        int quant = 0;
+
+        char id[16] = "id";
+        snprintf(id, 16, "id%d", counter);
+
+        while (p)
+        {
+            split = realloc(split, sizeof(char *) * ++quant);
+            split[quant - 1] = p;
+
+            p = strtok(NULL, ".");
+        }
+
+        split = realloc(split, sizeof(char *) * (quant + 1));
+        split[quant] = '\0';
+
+        if (strcmp(split[1], "a") == 0)
+        {
+            prepare_stat(0, id, split[0]);
+        }
+        else if (strcmp(split[1], "b") == 0)
+        {
+            prepare_stat(1, id, split[0]);
+        }
+        else if (strcmp(split[1], "c") == 0)
+        {
+            prepare_stat(2, id, split[0]);
+        }
+        else if (strcmp(split[1], "main") == 0)
+        {
+            prepare_stat(0, id, split[0]);
+        }
+        else
+        {
+            serial_out("invalid key");
+        }
+
+        free(split);
+        free(duplicate);
+    }
+    else
+    {
+        serial_out("invalid key");
+    }
 }

@@ -17,6 +17,7 @@ void get_result(char *id);
 void display_factors();
 int prepare_factor(int value, char *id);
 int prepare_append(int value, char *id, char *dataset);
+int prepare_stat(int value, char *id, char *dataset);
 int get_task(char *id);
 int change_task(char *id, char state, char *results);
 
