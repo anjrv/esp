@@ -533,7 +533,7 @@ void append_noise(void *pvParameter)
  * 
  * A worker thread will be created according to the source the dataset uses
  * 
- * @param value the number of rows to try fetch ( NOTE: rows < value )
+ * @param value the number of rows to try fetch
  * @param id the current task id
  * @param dataset the dataset to append to
  * 
@@ -552,7 +552,7 @@ int prepare_append(int value, char *id, char *dataset)
     strcat(tag, " ");
     strcat(tag, dataset);
 
-    char *ptr = get_source(dataset);
+    char *ptr = dataset_get_source(dataset);
 
     if (ptr == NULL)
     {
@@ -606,6 +606,21 @@ int prepare_append(int value, char *id, char *dataset)
     return 1;
 }
 
+/**
+ * Entry point function to create an stat task with the given
+ * value ( in this case it is used as the column number to work with ) 
+ * current incremental id and the dataset to append rows to. 
+ * 
+ * @param value the column to work with
+ * @param id the current task id
+ * @param dataset the dataset to work with 
+ * 
+ * @return an id: 
+ *         1 if creating the task was unsuccessful, this indicates lack of memory, 
+ *        -2 a dataset was not found
+ *        -3 an empty dataset was found
+ *         0 task successfully created, 
+ */
 int prepare_stat(int value, char *id, char *dataset)
 {
     BaseType_t success;
@@ -616,16 +631,19 @@ int prepare_stat(int value, char *id, char *dataset)
     strcat(tag, dataset);
 
     // This mostly provides a scuffed way to check if the dataset is present
-    char *ptr = get_source(dataset);
-    if (ptr == NULL)
+    int n = dataset_entry_count(dataset);
+    if (n == -2)
     {
         // No datasource, dont create task
         // Do not free the null pointer
         free(tag);
         return -2;
     }
-
-    free(ptr);
+    else if (n == 0)
+    {
+        free(tag);
+        return -3;
+    }
 
     // Value in this case is the index of the column
     while (insert_task(id, "data_stat", value) == -1)
@@ -636,7 +654,7 @@ int prepare_stat(int value, char *id, char *dataset)
     success = xTaskCreatePinnedToCore(
         &parse_dataset,
         id,
-        2048,
+        8192,
         (void *)tag,
         LOW_PRIORITY,
         NULL,

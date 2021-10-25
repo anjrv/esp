@@ -73,6 +73,8 @@
  * 3.5.4 - Some semaphore refactoring for tasks
  * 
  * 3.6.0 - data_raw added
+ * 
+ * 3.7.0 - data_stat added ...
  */
 
 #endif

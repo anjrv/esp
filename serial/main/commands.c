@@ -396,8 +396,7 @@ void command_ps()
 }
 
 /**
- * Prints the result ( or status if not complete ) of
- * a previous factoring process if a valid ID is given
+ * Prints the result of a previous background task if a valid ID is given 
  * 
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
@@ -421,6 +420,12 @@ void command_result(int num_args, char **vars)
     }
 }
 
+/**
+ * Attempts to scan and connect to a bluetooth name + service
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ */
 void command_bt_connect(int num_args, char **vars)
 {
     if (num_args != 3)
@@ -450,6 +455,9 @@ void command_bt_connect(int num_args, char **vars)
     serial_out("connection success");
 }
 
+/**
+ * Prints some information about the current bluetooth connection 
+ */
 void command_bt_status()
 {
     if (active_connection)
@@ -472,6 +480,9 @@ void command_bt_status()
     }
 }
 
+/**
+ * Closes the current bluetooth connection
+ */
 void command_bt_close()
 {
     if (active_connection)
@@ -485,6 +496,12 @@ void command_bt_close()
     serial_out("invalid disconnect");
 }
 
+/**
+ * Attempts to add a dataset with the given name and source
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ */
 void command_data_create(int num_args, char **vars)
 {
     if (num_args != 3)
@@ -519,6 +536,12 @@ void command_data_create(int num_args, char **vars)
     serial_out("data set created");
 }
 
+/**
+ * Attempts to destroy a dataset ( and its entries ) with the given name
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ */
 void command_data_destroy(int num_args, char **vars)
 {
     if (num_args != 2)
@@ -536,6 +559,12 @@ void command_data_destroy(int num_args, char **vars)
     serial_out("data set destroyed");
 }
 
+/**
+ * Attempts to print some information about a given dataset
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ */
 void command_data_info(int num_args, char **vars)
 {
     if (num_args != 2)
@@ -576,6 +605,12 @@ void command_data_info(int num_args, char **vars)
     }
 }
 
+/**
+ * Prints the raw data rows of the requested dataset[.key] to serial output, or a problem report 
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ */
 void command_data_raw(int num_args, char **vars)
 {
     if (num_args != 2)
@@ -643,9 +678,9 @@ void command_data_raw(int num_args, char **vars)
  * Gets the prime factors of:
  * - A given integer value
  * - A given dictionary entry
- * - The number at the top of the stack
+ * - The number at the top of the stack. 
  * 
- * Prints the id of the factoring process upon creation.
+ * Prints the id of the factoring process upon creation or a state report.
  * 
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
@@ -697,9 +732,9 @@ void command_factor(int num_args, char **vars, int counter, stack *stack_pointer
 }
 
 /**
- * Attempts to create a worker to append data to a dataset
+ * Attempts to create a worker to append data to a dataset. 
  * 
- * Prints the id of the worker process upon creation.
+ * Prints the id of the worker process upon creation or a state report. 
  * 
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
@@ -747,6 +782,15 @@ void command_data_append(int num_args, char **vars, int counter)
     free(var);
 }
 
+/**
+ * Attempts to create a worker to gather information about a dataset. 
+ * 
+ * Prints the id of the worker process upon creation or a state report. 
+ * 
+ * @param num_args      number of delimiter split inputs
+ * @param vars          the query variables provided to the device
+ * @param counter       the current task number
+ */
 void command_data_stat(int num_args, char **vars, int counter)
 {
     if (num_args != 2)
@@ -779,27 +823,68 @@ void command_data_stat(int num_args, char **vars, int counter)
         split = realloc(split, sizeof(char *) * (quant + 1));
         split[quant] = '\0';
 
-        if (strcmp(split[1], "a") == 0)
+        char *source = dataset_get_source(split[0]);
+
+        if (source == NULL)
         {
-            prepare_stat(0, id, split[0]);
+            serial_out("invalid name");
+            return;
         }
-        else if (strcmp(split[1], "b") == 0)
+
+        int res = 0;
+
+        if (strcmp(strupr(source), "BT_DEMO") == 0)
         {
-            prepare_stat(1, id, split[0]);
+            if (strcmp(split[1], "main") == 0)
+            {
+                res = prepare_stat(0, id, split[0]);
+            }
+            else
+            {
+                res = -4;
+            }
         }
-        else if (strcmp(split[1], "c") == 0)
+        else if (strcmp(strupr(source), "NOISE") == 0)
         {
-            prepare_stat(2, id, split[0]);
-        }
-        else if (strcmp(split[1], "main") == 0)
-        {
-            prepare_stat(0, id, split[0]);
+            if (strcmp(split[1], "a") == 0)
+            {
+                res = prepare_stat(0, id, split[0]);
+            }
+            else if (strcmp(split[1], "b") == 0)
+            {
+                res = prepare_stat(1, id, split[0]);
+            }
+            else if (strcmp(split[1], "c") == 0)
+            {
+                res = prepare_stat(2, id, split[0]);
+            }
+            else
+            {
+                res = -4;
+            }
         }
         else
         {
-            serial_out("invalid key");
+            res = -4;
         }
 
+        switch (res)
+        {
+        case 0:
+            serial_out(id);
+            break;
+        case -2:
+            serial_out("invalid name");
+            break;
+        case -3:
+            serial_out("empty set");
+            break;
+        case -4:
+            serial_out("invalid key");
+            break;
+        }
+
+        free(source);
         free(split);
         free(duplicate);
     }

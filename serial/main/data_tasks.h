@@ -33,9 +33,10 @@ void initialize_bt_tasks();
 int create_dataset(char *name, char *source);
 int destroy_dataset(char *name);
 int check_dataset(char *name);
-char* get_source(char *name);
+char* dataset_get_source(char *name);
 int add_entry(char *name, char *row);
 int print_raw_data(char *name, int key);
 void parse_dataset(void *pvParameter);
+int dataset_entry_count(char *name);
 
 #endif

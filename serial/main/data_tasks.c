@@ -101,6 +101,38 @@ char *dataset_source(char *name)
 }
 
 /**
+ * Helper function to obtain the number of entries for a given dataset
+ * 
+ * @param name the name of the dataset to check the entries of
+ * @return an int: 
+ *         -1 if the dataset was not found, 
+ *         the number of entries the dataset has otherwise
+ */ 
+int dataset_entry_count(char *name)
+{
+    while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    data_node *tmp = data_head;
+    int entries = -2;
+
+    while (tmp != NULL)
+    {
+        if (strcmp(tmp->dataset, name) == 0)
+        {
+            entries = tmp->entries;
+            xSemaphoreGive(dataset_access);
+        }
+
+        tmp = tmp->next;
+    }
+
+    return entries;
+}
+
+/**
  * Wrapper function to obtain the name of the source for a given dataset
  * Provides a semaphore waiting loop. 
  * 
@@ -110,7 +142,7 @@ char *dataset_source(char *name)
  * @param the name of the dataset to look for
  * @return a memory allocated copy of the source
  */
-char *get_source(char *name)
+char *dataset_get_source(char *name)
 {
     while (xSemaphoreTake(dataset_access, WAIT_QUEUE) != pdTRUE)
     {
@@ -598,7 +630,7 @@ int compare(const void *a, const void *b)
 }
 
 /**
- * Dataset worker that calculates values from a dataset 
+ * Dataset worker that calculates values from a dataset, I recommend not reading whatever the hell is going on here
  * 
  * @param pvParameter in this case we take in a composite char* pointer which gives us
  *                    both the dataset we should append to and the ID of the task for state management
@@ -653,9 +685,7 @@ void parse_dataset(void *pvParameter)
 
     xSemaphoreGive(dataset_access);
 
-    char buf[50];
-
-    serial_out(long_to_string(exists));
+    char buf[128];
 
     if (exists)
     {
@@ -743,8 +773,22 @@ void parse_dataset(void *pvParameter)
             xSemaphoreGive(dataset_access);
         }
 
+        // Double check whether stuff went haywire
         if (exists)
-            snprintf(buf, sizeof(buf), "%s %d %s %d", "mean:", total / entries, "stop crying:", entryvals[0]);
+        {
+            qsort(entryvals, entries, sizeof(int), compare);
+            float mean = total / (float)entries;
+            float sd = 0.0;
+
+            for (int j = 0; j < entries; j++)
+            {
+                sd += pow(entryvals[j] - mean, 2);
+            }
+
+            sd = sqrt(sd / entries);
+
+            snprintf(buf, sizeof(buf), "%s:%d %s:%.2f %s:%.2f %s:%d %s:%d %s:%.2f", "Entries", entries, "Mean", mean, "Std.Dev", sd, "Min", curr_min, "Max", curr_max, "Median", entries % 2 == 0 ? (float)(entryvals[entries / 2] + entryvals[(entries / 2) - 1]) : (float)entryvals[(entries - 1) / 2]);
+        }
 
         free(curr);
     }
