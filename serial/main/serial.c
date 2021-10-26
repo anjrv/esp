@@ -54,31 +54,29 @@ void serial_out(const char *string)
  */
 void respond(void *pvParameter)
 {
-	char **split = NULL;
-	char *duplicate = strdup(q);
-	char *p = strtok(duplicate, " ");
+	char **command_split = NULL;
+	char *query_duplicate = strdup(q);
+	char *p = strtok(query_duplicate, " ");
 	int quant = 0;
 
 	while (p)
 	{
-		split = realloc(split, sizeof(char *) * ++quant);
-		split[quant - 1] = p;
+		command_split = realloc(command_split, sizeof(char *) * ++quant);
+		command_split[quant - 1] = p;
 
 		p = strtok(NULL, " ");
 	}
 
-	split = realloc(split, sizeof(char *) * (quant + 1));
-	split[quant] = '\0';
+	command_split = realloc(command_split, sizeof(char *) * (quant + 1));
+	command_split[quant] = '\0';
 
 	// If there are no words present then
 	// we skip searching for a command
 	if (quant > 0)
 	{
-		// Cast command to uppercase to remove
-		// Case sensitivity
-		char *command = strupr(split[0]);
+		// Cast command to uppercase to remove case sensitivity
+		char *command = strupr(command_split[0]);
 
-		// "Switch" through available commands
 		if (strcmp(command, "PING") == 0)
 		{
 			command_ping();
@@ -101,15 +99,15 @@ void respond(void *pvParameter)
 		}
 		else if (strcmp(command, "STORE") == 0)
 		{
-			command_store(quant, split, dictionary);
+			command_store(quant, command_split, dictionary);
 		}
 		else if (strcmp(command, "QUERY") == 0)
 		{
-			command_query(quant, split, dictionary);
+			command_query(quant, command_split, dictionary);
 		}
 		else if (strcmp(command, "PUSH") == 0)
 		{
-			command_push(quant, split, stack_pointer);
+			command_push(quant, command_split, stack_pointer);
 		}
 		else if (strcmp(command, "POP") == 0)
 		{
@@ -117,7 +115,7 @@ void respond(void *pvParameter)
 		}
 		else if (strcmp(command, "ADD") == 0)
 		{
-			command_add(quant, split, stack_pointer, dictionary);
+			command_add(quant, command_split, stack_pointer, dictionary);
 		}
 		else if (strcmp(command, "PS") == 0)
 		{
@@ -125,15 +123,15 @@ void respond(void *pvParameter)
 		}
 		else if (strcmp(command, "RESULT") == 0)
 		{
-			command_result(quant, split);
+			command_result(quant, command_split);
 		}
 		else if (strcmp(command, "FACTOR") == 0)
 		{
-			command_factor(quant, split, counter++, stack_pointer, dictionary);
+			command_factor(quant, command_split, counter++, stack_pointer, dictionary);
 		}
 		else if (strcmp(command, "BT_CONNECT") == 0)
 		{
-			command_bt_connect(quant, split);
+			command_bt_connect(quant, command_split);
 		}
 		else if (strcmp(command, "BT_STATUS") == 0)
 		{
@@ -145,27 +143,27 @@ void respond(void *pvParameter)
 		}
 		else if (strcmp(command, "DATA_CREATE") == 0)
 		{
-			command_data_create(quant, split);
+			command_data_create(quant, command_split);
 		}
 		else if (strcmp(command, "DATA_DESTROY") == 0)
 		{
-			command_data_destroy(quant, split);
+			command_data_destroy(quant, command_split);
 		}
 		else if (strcmp(command, "DATA_INFO") == 0)
 		{
-			command_data_info(quant, split);
+			command_data_info(quant, command_split);
 		}
 		else if (strcmp(command, "DATA_APPEND") == 0)
 		{
-			command_data_append(quant, split, counter++);
+			command_data_append(quant, command_split, counter++);
 		}
 		else if (strcmp(command, "DATA_RAW") == 0)
 		{
-			command_data_raw(quant, split);
+			command_data_raw(quant, command_split);
 		}
 		else if (strcmp(command, "DATA_STAT") == 0)
 		{
-			command_data_stat(quant, split, counter++);
+			command_data_stat(quant, command_split, counter++);
 		}
 		else
 		{
@@ -179,8 +177,8 @@ void respond(void *pvParameter)
 		serial_out("command error");
 	}
 
-	free(split);
-	free(duplicate);
+	free(command_split);
+	free(query_duplicate);
 	serial_out("");
 
 	vTaskDelete(NULL); // Respond deletes itself when done
@@ -290,12 +288,9 @@ void main_task(void *pvParameter)
  */
 void app_main(void)
 {
-	int setup = data_client_prepare();
-	if (setup != 0)
-		return;
-
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
+	data_client_prepare();
 	initialize_bt_tasks();
 	initialize_tasks();
 	initialize_noise();

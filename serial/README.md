@@ -1,8 +1,50 @@
 # Assignment 3 Information
 
-# Changes and new implementation
+## Changes and implementation
+
+In general an honest attempt was made to implement all the listed firmware changes. Upon rudimentary testing most of these perform as expected ( ignoring the fun new problem listed later in this information packet... ) including for things like datasource loss, data lock and data source destruction.
+
+There are two egregious exceptions to the above:
+
+* One very obvious instance where they do not perform as expected is the bt_connect command. I couldn't figure out a reasonable way to gracefully: accept a name and source -> scan for the name and source ( accounting for all the callbacks ) -> connect to a valid option ( if any ) and return information about this process within an instant function ( the combination of connection callback and an inquiry being entire seconds long makes it really hard to definitely and instantly say whether connection was successful. ) As a result of this the bt_connect response is effectively a lie, it only really tells you whether it could start scanning successfully... bt_status on the other hand will report correctly as there is a connection flag that is set when a connection is successfully made.
+* Another obvious omission is the lack of reaction to the "true" value-type of data-sources. Currently data_stat completely ignores that datasets with bt_demo source should be floats. The current way I would implement this is effectively forking data_stat into multiple methods depending on the source of the dataset ( or specifically the value type of the dataset. ) I legitimately did not have the willpower...
 
 
+## New fun problems!
+
+For some reason changing the configuration broke something in the way input is read through the serial. It now fails to recognize commands at random in a way I'm failing to figure out ...
+
+Example of this fuckery:
+```
+<< bt_connect ASC_BT_DataSource ASC_BT_DataSourceSvc
+>> connection success
+<< data_create banana bt_demo
+>> command error
+<< data_create banana bt_demo
+>> data set created
+<< data_append banana 20
+>> id0
+<< ps
+>> data_append id0 complete
+<< result id0
+>> 20 entries recovered
+<< data_raw banana
+>> command error
+<< data_raw banana
+>> command error
+<< data_raw banana
+>> request:banana entries:20
+```
+
+
+## Some general thoughts
+
+* Even this scuffed version of the project ended up taking a surprising amount of time. Providing semaphore handling and the required values for task creation made the implementation fairly longwinded even when "cheating" by effectively hard coding some of the knowledge about the data-sources we have available. 
+* It is very likely this type of hard coding will bite me in the ass later if we add an additional arbitrary N sources ( e.g. when implementing WiFi ) but realistically I kind of just started hacking stuff together to make actual progress here. 
+* The esp-idf documentation for classic bluetooth was, in my opinion, also surprisingly obtuse - often information was lacking about what result providing an argument to a function would have ... ( inquiry mode for example. )
+* This is probably already known but some of the firmware descriptions were a bit vague:
+    - From what I could tell sources have their keys tied to them - i.e. noise always has the keys a, b and c and these can never be changed ( at least in the current implementation. ) But some of the text makes it seem as if these can change?
+    - Some examples seem contradictory, the data_stat example seems to return values as if it was an instant command but is clearly defined as a background command. For this specific conflict I went with the assumption that the example was "shorthand" for the predefined order of: initiate background task > receive id > check result with id later
 
 # Assignment 2 Information ( Old )
 

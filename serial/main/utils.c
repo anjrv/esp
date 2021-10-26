@@ -5,11 +5,27 @@
 #include <limits.h>
 
 #include "utils.h"
+#include "client.h"
+#include "data_tasks.h"
 
 #define MSG_BUFFER_LENGTH 256
 
 // These are assorted helper functions
 // for use elsewhere in the project
+
+/**
+ * Checks whether the BT_DEMO source is available
+ * 
+ * @return an int:
+ *         1 if the connection to the BT_DEMO device/source is available
+ *         0 if it is not
+ */ 
+int bt_demo_available()
+{
+    if (active_connection && strcmp(BT_DATA_SOURCE_DEVICE, BT_DEMO_SOURCE_DEVICE) == 0 && strcmp(BT_DATA_SOURCE_SERVICE, BT_DEMO_SOURCE_SERVICE) == 0)
+        return 1;
+    return 0;
+}
 
 /**
  * Converts a char* to an integer and stores the result

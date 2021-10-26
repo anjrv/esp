@@ -585,9 +585,7 @@ void command_data_info(int num_args, char **vars)
     }
     else if (strcmp(strupr(tmp), "BT_DEMO") == 0)
     {
-        memset(tmp, '\0', sizeof(tmp));
-        strcpy(tmp, BT_DATA_SOURCE_SERVICE);
-        if (strcmp(strupr(tmp), "BT_DEMO") == 0 && active_connection)
+        if (bt_demo_available())
         {
             serial_out("Status: Available");
         }

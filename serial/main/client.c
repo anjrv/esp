@@ -127,12 +127,28 @@ BluetoothPacket init_packet()
     return out;
 }
 
+// Writes a single packet over the Bluetooth connection.  Does not perform
+//	any validation of flags or message contents.  Returns 0 on success.
+int send(int A_flags, const char *A_msg, TickType_t A_wait)
+{
+    // Wait for the channel out to be available.  Terminate on time-out.
+    EventBits_t bits_write_result = xEventGroupWaitBits(events, EVT_WRITE_READY, pdTRUE, pdTRUE, A_wait);
+    if (!(bits_write_result & EVT_WRITE_READY))
+        return 1;
+
+    // Construct the packet from arguments.
+    BluetoothPacket pak = init_packet();
+    pak.flags = A_flags;
+    strncpy(pak.data, A_msg, 59);
+
+    // Send the packet off on its merry way.
+    esp_spp_write(con_handle, sizeof(pak), (void *)&pak);
+
+    return 0;
+}
+
 /**
- * Dataset worker that fetches from the noise source. 
- * 
- * Because noise is locally available we don't concern ourselves with storing rows 
- * within the function itself, we simply attempt to get a row of noise and then request 
- * that it be appended to the dataset, any semaphore acquisition is waited for.
+ * Dataset worker that fetches from the bt_demo source. 
  * 
  * @param pvParameter in this case we take in a composite char* pointer which gives us
  *                    both the dataset we should append to and the ID of the task for state management
@@ -166,29 +182,84 @@ void append_bt(void *pvParameter)
     }
 
     int i = 0;
-    int exists = 1;
+    int source = 1;
 
     char buf[40];
-    while (i < iter - 1 && exists)
+    snprintf(buf, sizeof(buf), "%s %d", "poll", iter);
+    if (send(BT_FLAG_END, buf, WAIT_WRITE))
     {
-        vTaskDelay(DELAY);
-        noise(buf);
-        char *c = strdup(buf);
-
-        if (add_entry(split[1], c) != 0)
-            exists = 0;
-
-        free(c);
-        i++;
+        source = 0;
     }
 
-    if (exists)
+    int response_complete = 0;
+    char **rows = NULL;
+
+    while (source && !response_complete)
+    {
+        BluetoothPacket in = init_packet();
+        if (xQueueReceive(bt_recv, &in, WAIT_RESPONSE) != pdTRUE)
+        {
+            source = 0;
+        }
+
+        // Minimal packet verification to prevent buffer overruns.
+        assert(in.data[59] == '\0');
+
+        // Store the message
+        rows = realloc(rows, sizeof(char *) * ++i);
+        char* row = strdup(in.data);
+        rows[i - 1] = row;
+
+        // Evaluate the packet flags and proceed appropriately.
+        if (in.flags & BT_FLAG_ERR)
+        {
+            source = 0;
+        }
+
+        if (in.flags & BT_FLAG_REQ)
+        {
+            // Ack requested:
+            if (send(BT_FLAG_ACK | BT_FLAG_END, "", WAIT_WRITE))
+            {
+                source = 0;
+            }
+        }
+
+        if (in.flags & BT_FLAG_END)
+        {
+            response_complete = 1;
+            rows = realloc(rows, sizeof(char *) * (i + 1));
+            rows[i] = '\0';
+        }
+    }
+
+    int exists = 1;
+    iter = 0; // Reset iter, i is the amount we actually got
+    if (response_complete)
+    {
+        while (exists && iter < i)
+        {
+            vTaskDelay(DELAY);
+
+            if (add_entry(split[1], rows[iter]) != 0)
+                exists = 0;
+
+            free(rows[iter]);
+            iter++;
+        }
+    }
+
+    if (exists && response_complete)
     {
         snprintf(buf, sizeof(buf), "%d %s %s", i, "entries", "recovered");
     }
-    else
+    else if (!exists)
     {
         snprintf(buf, sizeof(buf), "%s", "early termination: set destroyed");
+    }
+    else
+    {
+        snprintf(buf, sizeof(buf), "%s", "early termination: source unavailable");
     }
 
     while (change_task(split[0], COMPLETE0, buf) == -1)
@@ -199,106 +270,6 @@ void append_bt(void *pvParameter)
     free(split);
     free(id);
 
-    vTaskDelete(NULL);
-}
-
-// Writes a single packet over the Bluetooth connection.  Does not perform
-//	any validation of flags or message contents.  Returns 0 on success.
-int send(int A_flags, const char *A_msg, TickType_t A_wait)
-{
-    // Wait for the channel out to be available.  Terminate on time-out.
-    EventBits_t bits_write_result = xEventGroupWaitBits(events, EVT_WRITE_READY, pdTRUE, pdTRUE, A_wait);
-    if (!(bits_write_result & EVT_WRITE_READY))
-        return 1;
-
-    // Construct the packet from arguments.
-    BluetoothPacket pak = init_packet();
-    pak.flags = A_flags;
-    strncpy(pak.data, A_msg, 59);
-
-    // Send the packet off on its merry way.
-    esp_spp_write(con_handle, sizeof(pak), (void *)&pak);
-
-    return 0;
-}
-
-int test_command(const char *A_msg)
-{
-    if (send(BT_FLAG_END, A_msg, WAIT_WRITE))
-    {
-        serial_out("Failed to send packet.  Write unavailable.");
-        return 1;
-    }
-
-    int response_complete = 0;
-    while (!response_complete)
-    {
-        BluetoothPacket in = init_packet();
-        if (xQueueReceive(bt_recv, &in, WAIT_RESPONSE) != pdTRUE)
-        {
-            serial_out("Timed out waiting for response..");
-            return 2;
-        }
-
-        // Minimal packet verification to prevent buffer overruns.
-        assert(in.data[59] == '\0');
-
-        // Print out the packet contents.
-        serial_out(in.data);
-
-        // Evaluate the packet flags and proceed appropriately.
-        if (in.flags & BT_FLAG_ERR)
-        {
-            serial_out("ERROR");
-            // printf("ERROR: %s\n", in.data);
-            return 3;
-        }
-
-        if (in.flags & BT_FLAG_REQ)
-        {
-            // Ack requested:
-            if (send(BT_FLAG_ACK | BT_FLAG_END, "", WAIT_WRITE))
-            {
-                serial_out("Failed to send ACK.  Write unavailable.");
-                return 1;
-            }
-        }
-
-        if (in.flags & BT_FLAG_END)
-        {
-            response_complete = 1;
-            serial_out("Response complete.");
-        }
-    }
-    return 0;
-}
-
-void worker(void *A_param)
-{
-    // Worker blocks indefinitely until the connection event bit is set.  Observe
-    //	that we need to set up a loop here and check the output bits -- it is possible
-    //	that the integer maximum tick count can elapse, and we need to verify that the
-    //	bits were set rather than timed out.
-
-    int wait_ready = 0;
-    EventBits_t wait_result = 0;
-    while (!wait_ready)
-    {
-        wait_result = xEventGroupWaitBits(events, EVT_CONNECTED, pdFALSE, pdTRUE, UINT32_MAX);
-        if (wait_result & EVT_CONNECTED)
-        {
-            wait_ready = 1;
-        }
-    }
-
-    // Try out some commands.
-    test_command("test_single");
-    test_command("test_multi");
-    test_command("test_req");
-    test_command("poll 64");
-
-    // We're done here -- close the BT connection and terminate.
-    esp_spp_disconnect(con_handle);
     vTaskDelete(NULL);
 }
 

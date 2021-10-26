@@ -581,14 +581,14 @@ int prepare_append(int value, char *id, char *dataset)
     else
     {
         // No source
-        if (!active_connection)
+        if (!bt_demo_available())
             return -3;
 
-        // Give BT append more memory to store rows
+        // Give BT append more memory to store rows while polling
         success = xTaskCreatePinnedToCore(
             &append_bt,
             id,
-            4096,
+            2048 + 64 * value,
             (void *)tag,
             LOW_PRIORITY,
             NULL,
@@ -651,10 +651,14 @@ int prepare_stat(int value, char *id, char *dataset)
         vTaskDelay(DELAY);
     }
 
+    // The memory for this function is somewhat weird
+    // Hard to guarantee enough memory with static allocation
+    // The number of entries will increase the amount of memory needed
+    // Therefore we add 64 for each entry to prevent stack overflow
     success = xTaskCreatePinnedToCore(
         &parse_dataset,
         id,
-        8192,
+        2048 + 64 * n,
         (void *)tag,
         LOW_PRIORITY,
         NULL,

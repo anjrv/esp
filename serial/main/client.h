@@ -1,6 +1,8 @@
 #ifndef CLIENT_H_
 #define CLIENT_H_
 
+// Reference: Most of the raw implementation in this file was provided by the bt_client demo.
+
 #define BT_DATA_CLIENT_DEVICE "Kool-Aid"
 
 int data_client_prepare();

@@ -29,6 +29,9 @@ typedef struct BluetoothPacket
 #define BT_FLAG_DAT 0x00FFFF00
 #define BT_FLAG_ERR 0x80000000
 
+#define BT_DEMO_SOURCE_DEVICE "ASC_BT_DataSource"
+#define BT_DEMO_SOURCE_SERVICE "ASC_BT_DataSourceSvc"
+
 void initialize_bt_tasks();
 int create_dataset(char *name, char *source);
 int destroy_dataset(char *name);
