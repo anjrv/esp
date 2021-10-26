@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "serial.h"
 #include "stack.h"
@@ -13,6 +14,8 @@
 #include "client.h"
 #include "data_tasks.h"
 #include "noise.h"
+
+SemaphoreHandle_t query_access;
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -55,7 +58,15 @@ void serial_out(const char *string)
 void respond(void *pvParameter)
 {
 	char **command_split = NULL;
+
+	while (xSemaphoreTake(query_access, WAIT_QUEUE) != pdTRUE)
+	{
+		vTaskDelay(DELAY);
+	}
+
 	char *query_duplicate = strdup(q);
+
+	xSemaphoreGive(query_access);
 	char *p = strtok(query_duplicate, " ");
 	int quant = 0;
 
@@ -207,6 +218,11 @@ void main_task(void *pvParameter)
 
 		memset(q, 0, MSG_BUFFER_LENGTH);
 
+		while (xSemaphoreTake(query_access, WAIT_QUEUE) != pdTRUE)
+		{
+			vTaskDelay(DELAY);
+		}
+
 		while (!complete)
 		{
 			if (at >= 256)
@@ -269,6 +285,7 @@ void main_task(void *pvParameter)
 			}
 			else
 			{
+				xSemaphoreGive(query_access);
 				xTaskCreatePinnedToCore(
 					&respond,
 					"respond",
@@ -295,6 +312,9 @@ void app_main(void)
 	initialize_tasks();
 	initialize_noise();
 	counter = 0;
+
+	query_access = xSemaphoreCreateBinary();
+	xSemaphoreGive(query_access);
 
 	xTaskCreate(
 		&main_task,	   // - function ptr

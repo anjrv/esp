@@ -1,10 +1,10 @@
-#ifndef VERSION_H_ 
-#define VERSION_H_ 
+#ifndef VERSION_H_
+#define VERSION_H_
 
 #define DEVELOPER_ID "s114"
-#define MAJOR 3 
-#define MINOR 5 
-#define REVISION 2 
+#define MAJOR 3
+#define MINOR 7
+#define REVISION 0
 
 /**
  * VERSION HISTORY
