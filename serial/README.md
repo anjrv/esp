@@ -4,10 +4,15 @@
 
 In general an honest attempt was made to implement all the listed firmware changes. Upon rudimentary testing most of these perform as expected including for things like datasource loss, data lock and data source destruction.
 
-There are two egregious exceptions to the above:
+A strong exception to expected behaviour would be data_stat. This does not properly account for different value types ( e.g. from bt_demo ) and currently simply assumes everything is an int.
 
-* One very obvious instance where they do not perform as expected is the bt_connect command. I couldn't figure out a reasonable way to gracefully: accept a name and source -> scan for the name and source ( accounting for all the callbacks ) -> connect to a valid option ( if any ) and return information about this process within an instant function ( the combination of connection callback and an inquiry being entire seconds long makes it really hard to definitely and instantly say whether connection was successful. ) As a result of this the bt_connect response is effectively a lie, it only really tells you whether it could start scanning successfully... bt_status on the other hand will report correctly as there is a connection flag that is set when a connection is successfully made.
-* Another obvious omission is the lack of reaction to the "true" value-type of data-sources. Currently data_stat completely ignores that datasets with bt_demo source should be floats. The current way I would implement this is effectively forking data_stat into multiple methods depending on the source of the dataset ( or specifically the value type of the dataset. ) I legitimately did not have the willpower...
+### Data structure
+
+This ended up being kind of a mess of linked lists that form a kind of filing cabinet "structure". They provide some access to the structure node via one semaphore ( for the purpose of e.g. data_info ) and use a different semaphore for access to entries for longer processes that may hold onto that semaphore longer.
+
+### Bluetooth
+
+Really I mostly just copied the bt_client demo code and adjusted the worker and scanning code a bit.
 
 
 ## Some general thoughts
