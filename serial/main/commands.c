@@ -16,6 +16,8 @@
 
 #define MSG_BUFFER_LENGTH 256
 
+const TickType_t CONN_DELAY = 500 / portTICK_PERIOD_MS;
+
 // These are the command endpoints
 // routed to by the respond function
 // in serial.c
@@ -452,7 +454,21 @@ void command_bt_connect(int num_args, char **vars)
         return;
     }
 
-    serial_out("connection success");
+    int wait = 0;
+    while (!active_connection && wait < 10)
+    {
+        vTaskDelay(CONN_DELAY);
+        wait++;
+    }
+
+    if (active_connection)
+    {
+        serial_out("connection success");
+    }
+    else
+    {
+        serial_out("connection failure");
+    }
 }
 
 /**

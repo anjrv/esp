@@ -106,7 +106,7 @@ int data_client_prepare()
 
 int bt_scan_now()
 {
-    if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 30, 0) != ESP_OK)
+    if (esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 5, 0) != ESP_OK)
     {
         return 1;
     }

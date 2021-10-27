@@ -15,8 +15,6 @@
 #include "data_tasks.h"
 #include "noise.h"
 
-SemaphoreHandle_t query_access;
-
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
 // between the main loop and response function
@@ -52,21 +50,12 @@ void serial_out(const char *string)
 /**
  * respond(..) provides routing for the given query string
  * after splitting it into space delimited tokens
- * 
- * @param pvParameter function call parameter not used
  */
-void respond(void *pvParameter)
+void respond()
 {
 	char **command_split = NULL;
-
-	while (xSemaphoreTake(query_access, WAIT_QUEUE) != pdTRUE)
-	{
-		vTaskDelay(DELAY);
-	}
-
 	char *query_duplicate = strdup(q);
 
-	xSemaphoreGive(query_access);
 	char *p = strtok(query_duplicate, " ");
 	int quant = 0;
 
@@ -191,8 +180,6 @@ void respond(void *pvParameter)
 	free(command_split);
 	free(query_duplicate);
 	serial_out("");
-
-	vTaskDelete(NULL); // Respond deletes itself when done
 }
 
 /**
@@ -217,11 +204,6 @@ void main_task(void *pvParameter)
 		int trailing_whitespace = 0;
 
 		memset(q, 0, MSG_BUFFER_LENGTH);
-
-		while (xSemaphoreTake(query_access, WAIT_QUEUE) != pdTRUE)
-		{
-			vTaskDelay(DELAY);
-		}
 
 		while (!complete)
 		{
@@ -285,16 +267,7 @@ void main_task(void *pvParameter)
 			}
 			else
 			{
-				xSemaphoreGive(query_access);
-				xTaskCreatePinnedToCore(
-					&respond,
-					"respond",
-					8192,
-					NULL,
-					HIGH_PRIORITY,
-					NULL,
-					tskNO_AFFINITY // Use both cores based on availability
-				);
+				respond();
 			}
 		}
 	}
@@ -313,13 +286,10 @@ void app_main(void)
 	initialize_noise();
 	counter = 0;
 
-	query_access = xSemaphoreCreateBinary();
-	xSemaphoreGive(query_access);
-
 	xTaskCreate(
 		&main_task,	   // - function ptr
 		"main_task",   // - arbitrary name
-		2048,		   // - stack size [byte]
+		8192,		   // - stack size [byte]
 		NULL,		   // - optional data for task
 		MAIN_PRIORITY, // - priority of the main task
 		NULL		   // - handle to task (for control)
