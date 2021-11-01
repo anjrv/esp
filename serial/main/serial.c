@@ -5,6 +5,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
+#include "nvs_flash.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_now.h"
+#include "esp_netif.h"
+#include "esp_log.h"
+
 #include "serial.h"
 #include "stack.h"
 #include "dict.h"
@@ -14,6 +21,7 @@
 #include "client.h"
 #include "data_tasks.h"
 #include "noise.h"
+#include "wifi.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -165,6 +173,22 @@ void respond()
 		{
 			command_data_stat(quant, command_split, counter++);
 		}
+		else if (strcmp(command, "NET_LOCATE") == 0)
+		{	
+			command_net_locate();
+		}
+		else if (strcmp(command, "NET_STATUS") == 0)
+		{
+			serial_out("Status request");
+		}
+		else if (strcmp(command, "NET_RESET") == 0)
+		{
+			serial_out("NET_RESET");
+		}
+		else if (strcmp(command, "NET_TABLE") == 0)
+		{
+			serial_out("TABLE REQUEST");
+		}
 		else
 		{
 			// Default case, command does not exist
@@ -280,7 +304,11 @@ void app_main(void)
 {
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
-	data_client_prepare();
+	// data_client_prepare(); BT setup, conflicts with WiFi
+	esp_log_level_set("wifi", ESP_LOG_NONE);
+	ESP_ERROR_CHECK(nvs_flash_init());
+	wifi_init();
+	espnow_init();
 	initialize_bt_tasks();
 	initialize_tasks();
 	initialize_noise();

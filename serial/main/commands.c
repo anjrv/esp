@@ -13,6 +13,7 @@
 #include "tasks.h"
 #include "client.h"
 #include "data_tasks.h"
+#include "wifi.h"
 
 #define MSG_BUFFER_LENGTH 256
 
@@ -682,6 +683,12 @@ void command_data_raw(int num_args, char **vars)
     {
         print_raw_data(vars[1], -1);
     }
+}
+
+void command_net_locate() {
+    added_peers = 0;
+
+    wifi_send_locate();
 }
 
 /////////////////////////
