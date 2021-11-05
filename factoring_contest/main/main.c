@@ -91,6 +91,7 @@ void new_puzzle(void)
            (unsigned long long) puzzle_p1,
            (unsigned long long) puzzle_p2,
            (unsigned long long) puzzle_ab);
+    fflush(stdout);
 }
 
 /*********************************************************************/
@@ -103,9 +104,10 @@ void main_task(void *pvParameter)
     int       count = 0;
     
     printf("Main task started -- Generating a factoring contest soon!\n");
+    fflush(stdout);
     while(1)
     {
-        vTaskDelay(5000 / portTICK_RATE_MS);
+        vTaskDelay(1000 / portTICK_RATE_MS);
         
         if ( count && !puzzle_solved )
             count--;
@@ -117,8 +119,10 @@ void main_task(void *pvParameter)
 
         /* inform everyone about the current challenge! */
         sprintf( buf, "factor %llu", puzzle_ab );
-        if ( esp_now_send(broadcast, (uint8_t *)buf, strlen(buf) ) != ESP_OK )
+        if ( esp_now_send(broadcast, (uint8_t *)buf, strlen(buf) ) != ESP_OK ) {
             printf("Error sending the data\n");
+            fflush(stdout);
+        }
     }
 }
 
@@ -156,12 +160,14 @@ uint64_t parse_int(const char *buf, int len)
 void espnow_onreceive(const uint8_t *mac, const uint8_t *data, int len) {
     printf( "espnow from MAC: %02x:%02x:%02x:%02x:%02x:%02x len=%d\n",
             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], len );
+    fflush(stdout);
     uint64_t p = parse_int((const char*)data, len);
 
     if ( (p==puzzle_p1 || p==puzzle_p2) && !puzzle_solved )
     {
         puzzle_solved = 1;
         printf( " - puzzle solved!\n" );
+        fflush(stdout);
     }    
 }
 
@@ -171,6 +177,7 @@ void espnow_init(void)
 {
     if (esp_now_init() != ESP_OK) {
         printf("Error initializing ESP-NOW\n");
+        fflush(stdout);
         return;
     }
     esp_now_register_recv_cb(espnow_onreceive);
@@ -184,6 +191,7 @@ void espnow_init(void)
     peerInfo.encrypt = false;
     if (esp_now_add_peer(&peerInfo) != ESP_OK) {
         printf("Failed to add peer\n");
+        fflush(stdout);
         return;
     }
 }

@@ -2,8 +2,8 @@
 #define VERSION_H_
 
 #define DEVELOPER_ID "s114"
-#define MAJOR 3
-#define MINOR 7
+#define MAJOR 4 
+#define MINOR 1
 #define REVISION 0
 
 /**
@@ -75,6 +75,10 @@
  * 3.6.0 - data_raw added
  * 
  * 3.7.0 - data_stat added ...
+ * 
+ * 4.0.0 - Assignment 4 setup, initialize and configure WiFI / disable bluetooth
+ * 
+ * 4.1.0 - WiFi files added with placeholder functions and "globals"
  */
 
 #endif

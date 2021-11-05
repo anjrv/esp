@@ -33,9 +33,9 @@ const TickType_t CONN_DELAY = 500 / portTICK_PERIOD_MS;
 // index for vars
 
 // Non local variables
-char err_msg[MSG_BUFFER_LENGTH] = "no history";
-char mac_addr[18] = {0};
-char version[6] = {0};
+static char err_msg[MSG_BUFFER_LENGTH] = "no history";
+static char mac_addr[18] = {0};
+static char version[6] = {0};
 
 /**
  * Used for setting the current error state
@@ -685,10 +685,23 @@ void command_data_raw(int num_args, char **vars)
     }
 }
 
-void command_net_locate() {
-    added_peers = 0;
+void command_net_locate()
+{
+    int peers = wifi_send_locate();
 
-    wifi_send_locate();
+    char buf[50];
+    snprintf(buf, sizeof(buf), "%s %d %s", "Linked", peers, "nodes");
+    serial_out(buf);
+}
+
+void command_net_table()
+{
+    wifi_net_table();
+}
+
+void command_net_reset()
+{
+    wifi_net_reset();
 }
 
 /////////////////////////

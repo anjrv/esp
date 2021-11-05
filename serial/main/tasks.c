@@ -29,8 +29,8 @@ struct node
     struct node *next;
 };
 
-struct node *head = NULL;
-SemaphoreHandle_t head_access;
+static struct node *head = NULL;
+static SemaphoreHandle_t head_access;
 
 /**
  * Initializes the linked list semaphore

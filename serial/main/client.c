@@ -37,15 +37,15 @@
 #define EVT_WRITE_READY (1 << 1)
 
 // Synchronization objects:
-QueueHandle_t bt_recv = NULL;
-EventGroupHandle_t events = NULL;
+static QueueHandle_t bt_recv = NULL;
+static EventGroupHandle_t events = NULL;
 
-esp_bd_addr_t remote_addr = {0};
-uint8_t remote_len = 0;
-char remote_name[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
+static esp_bd_addr_t remote_addr = {0};
+static uint8_t remote_len = 0;
+static char remote_name[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
 
 // Bluetooth SPP connection data:
-uint32_t con_handle = 0xFFFFFFFF;
+static uint32_t con_handle = 0xFFFFFFFF;
 
 // Forward declarations:
 BluetoothPacket init_packet();

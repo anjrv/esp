@@ -183,11 +183,11 @@ void respond()
 		}
 		else if (strcmp(command, "NET_RESET") == 0)
 		{
-			serial_out("NET_RESET");
+			command_net_reset();
 		}
 		else if (strcmp(command, "NET_TABLE") == 0)
 		{
-			serial_out("TABLE REQUEST");
+			command_net_table();
 		}
 		else
 		{

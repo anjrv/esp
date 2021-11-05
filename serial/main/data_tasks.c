@@ -32,8 +32,8 @@ struct task_node
     struct task_node *next;
 };
 
-struct data_node *data_head = NULL;
-SemaphoreHandle_t dataset_access;
+static struct data_node *data_head = NULL;
+static SemaphoreHandle_t dataset_access;
 
 /**
  * Initializes the linked list semaphore

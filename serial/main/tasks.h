@@ -1,9 +1,9 @@
 #ifndef TASKS_H_
 #define TASKS_H_
 
-#define MAIN_PRIORITY 0
+#define MAIN_PRIORITY 5 
 #define LOW_PRIORITY 1
-#define HIGH_PRIORITY 4
+#define HIGH_PRIORITY 3 
 #define WAIT_QUEUE ((TickType_t)(10 / portTICK_PERIOD_MS))
 #define DELAY ((TickType_t)(50 / portTICK_PERIOD_MS))
 
