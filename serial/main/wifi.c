@@ -19,23 +19,11 @@
 
 #define MAX_LINKS 4
 #define FRAME_SIZE 152
-// Some packet constants
 #define VERSION 0x11
 #define BROADCAST 0xFF
 #define LOCATE 0x01
 #define LINK 0x02
 #define STATUS 0x03
-
-static const TickType_t LOCATE_DELAY = 5000 / portTICK_PERIOD_MS;
-
-static uint8_t broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-static uint8_t wifi_msg[FRAME_SIZE] = {0};
-static uint8_t own_id = 0xFF;
-static uint8_t identifier = 0xFF;
-static int curr_links = 0;
-static int added_peers = 0;
-static int active_nodes = 0;
-static int inactive_nodes = 0;
 
 typedef struct
 {
@@ -43,16 +31,27 @@ typedef struct
     uint8_t mac_addr[6];
 } wifi_link;
 
-static esp_now_peer_info_t peerInfo;
-
-static wifi_link wifi_links[MAX_LINKS] = {0};
-static time_t link_timers[MAX_LINKS];
-static time_t status_timers[MAX_LINKS];
-static time_t locate_timer;
+static const TickType_t LOCATE_DELAY = 5000 / portTICK_PERIOD_MS;
 
 static SemaphoreHandle_t links_access;
+static SemaphoreHandle_t status_access;
 static SemaphoreHandle_t link_timers_access;
-static SemaphoreHandle_t status_timers_access;
+
+static esp_now_peer_info_t peerInfo;
+
+static uint8_t broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t own_id = 0xFF;
+static uint8_t identifier = 0xFF;
+
+static uint8_t status_responses[MAX_LINKS] = {0};
+static wifi_link wifi_links[MAX_LINKS] = {0};
+static time_t link_timers[MAX_LINKS];
+static time_t locate_timer;
+static time_t status_timer;
+
+static int inactive_nodes = 0;
+static int active_nodes = 0;
+static int added_peers = 0;
 
 void wifi_net_table()
 {
@@ -81,7 +80,8 @@ void wifi_net_table()
         }
     }
 
-    if (!results) {
+    if (!results)
+    {
         serial_out("empty table");
     }
 
@@ -131,6 +131,7 @@ int wifi_send_locate()
         return -3;
     }
 
+    uint8_t wifi_msg[FRAME_SIZE] = {0};
     wifi_msg[0] = VERSION;
     wifi_msg[1] = own_id;
     wifi_msg[2] = BROADCAST;
@@ -156,6 +157,90 @@ int wifi_send_locate()
 
 int wifi_send_status()
 {
+    inactive_nodes = 0;
+    active_nodes = 0;
+    while (xSemaphoreTake(status_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    // Clear old responses
+    memset(status_responses, 0, sizeof status_responses);
+    xSemaphoreGive(status_access);
+
+    while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    uint8_t wifi_msg[FRAME_SIZE] = {0};
+    wifi_msg[0] = VERSION;
+    wifi_msg[1] = own_id;
+    wifi_msg[4] = STATUS;
+
+    time(&status_timer);
+
+    int i;
+    for (i = 0; i < MAX_LINKS; i++)
+    {
+        if (wifi_links[i].mac_addr[0] != 0)
+        {
+            inactive_nodes++;
+            wifi_msg[2] = wifi_links[i].node_id;
+            wifi_msg[3] = wifi_msg[0] + wifi_msg[1] + wifi_msg[2] + wifi_msg[4];
+            if (esp_now_send(broadcast, (uint8_t *)wifi_msg, FRAME_SIZE) != ESP_OK)
+            {
+                return -1;
+            }
+        }
+    }
+
+    xSemaphoreGive(links_access);
+
+    vTaskDelay(LOCATE_DELAY / 5);
+
+    while (xSemaphoreTake(status_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    for (i = 0; i < MAX_LINKS; i++)
+    {
+        uint8_t curr_node = wifi_links[i].node_id;
+        int found = 0;
+        for (int j = 0; j < MAX_LINKS; j++)
+        {
+            if (status_responses[j] != 0 && status_responses[j] == curr_node)
+            {
+                inactive_nodes--;
+                active_nodes++;
+                found++;
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            // Clear relevant stuff
+            wifi_links[i].node_id = 0;
+            wifi_links[i].mac_addr[0] = 0;
+        }
+    }
+
+    xSemaphoreGive(status_access);
+    xSemaphoreGive(links_access);
+
+    char buf[40];
+    snprintf(buf, sizeof(buf), "%d %s", active_nodes, "nodes active");
+    serial_out(buf);
+
+    snprintf(buf, sizeof(buf), "%d %s", inactive_nodes, "nodes inactive");
+    serial_out(buf);
 
     return 0;
 }
@@ -199,6 +284,7 @@ int send_link(const uint8_t node, const uint8_t id)
 
     xSemaphoreGive(links_access);
 
+    uint8_t wifi_msg[FRAME_SIZE] = {0};
     wifi_msg[0] = VERSION;
     wifi_msg[1] = own_id;
     wifi_msg[2] = node;
@@ -256,6 +342,7 @@ int process_link(const uint8_t node, const uint8_t id, const uint8_t *mac)
             xSemaphoreGive(links_access);
         }
 
+        uint8_t wifi_msg[FRAME_SIZE] = {0};
         wifi_msg[0] = VERSION;
         wifi_msg[1] = own_id;
         wifi_msg[2] = node;
@@ -308,6 +395,84 @@ int process_link(const uint8_t node, const uint8_t id, const uint8_t *mac)
     return -1;
 }
 
+int process_status(const uint8_t node)
+{
+    int exists = 0;
+
+    while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
+    {
+        vTaskDelay(DELAY);
+    }
+
+    int i;
+    for (i = 0; i < MAX_LINKS; i++)
+    {
+        if (wifi_links[i].node_id == node && wifi_links[i].mac_addr[0] != 0)
+        {
+            exists++;
+            break;
+        }
+    }
+
+    xSemaphoreGive(links_access);
+
+    if (!exists)
+    {
+        return -2;
+    }
+
+    uint8_t wifi_msg[FRAME_SIZE] = {0};
+    wifi_msg[0] = VERSION;
+    wifi_msg[1] = own_id;
+    wifi_msg[2] = node;
+    wifi_msg[4] = STATUS;
+    wifi_msg[3] = wifi_msg[0] + wifi_msg[1] + wifi_msg[2] + wifi_msg[4];
+
+    if (!inactive_nodes)
+    {
+        if (esp_now_send(broadcast, (uint8_t *)wifi_msg, FRAME_SIZE) != ESP_OK)
+        {
+            return -1;
+        }
+
+        return 0;
+    }
+    else
+    {
+        if (difftime(time(NULL), status_timer) > 1)
+        {
+            return -4;
+        }
+        else
+        {
+            if (esp_now_send(broadcast, (uint8_t *)wifi_msg, FRAME_SIZE) != ESP_OK)
+            {
+                return -1;
+            }
+
+            while (xSemaphoreTake(status_access, WAIT_QUEUE) != pdTRUE)
+            {
+                vTaskDelay(DELAY);
+            }
+
+            for (i = 0; i < MAX_LINKS; i++)
+            {
+                if (status_responses[i] == 0)
+                {
+                    status_responses[i] = node;
+                    break;
+                }
+            }
+
+            xSemaphoreGive(status_access);
+
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
 void espnow_onreceive(const uint8_t *mac, const uint8_t *data, int len)
 {
     if (len != FRAME_SIZE)
@@ -338,9 +503,12 @@ void espnow_onreceive(const uint8_t *mac, const uint8_t *data, int len)
         send_link(data[1], data[5]);
         break;
     case LINK:
+        // Discard if not own ID?
         process_link(data[1], data[5], mac);
         break;
     case STATUS:
+        // Discard if not own ID?
+        process_status(data[1]);
         break;
     }
 }
@@ -375,8 +543,8 @@ int espnow_init(void)
     link_timers_access = xSemaphoreCreateBinary();
     xSemaphoreGive(link_timers_access);
 
-    status_timers_access = xSemaphoreCreateBinary();
-    xSemaphoreGive(status_timers_access);
+    status_access = xSemaphoreCreateBinary();
+    xSemaphoreGive(status_access);
 
     return 0;
 }

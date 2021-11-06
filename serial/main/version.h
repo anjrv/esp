@@ -79,6 +79,8 @@
  * 4.0.0 - Assignment 4 setup, initialize and configure WiFI / disable bluetooth
  * 
  * 4.1.0 - WiFi files added with placeholder functions and "globals"
+ * 
+ * 4.2.0 - net_locate, net_reset and net_table added
  */
 
 #endif

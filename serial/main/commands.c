@@ -704,6 +704,10 @@ void command_net_reset()
     wifi_net_reset();
 }
 
+void command_net_status() {
+    wifi_send_status();
+}
+
 /////////////////////////
 // BACKGROUND COMMANDS //
 /////////////////////////

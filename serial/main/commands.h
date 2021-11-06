@@ -27,5 +27,6 @@ void command_data_stat(int num_args, char **vars, int counter);
 void command_net_locate();
 void command_net_table();
 void command_net_reset();
+void command_net_status();
 
 #endif

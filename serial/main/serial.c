@@ -179,7 +179,7 @@ void respond()
 		}
 		else if (strcmp(command, "NET_STATUS") == 0)
 		{
-			serial_out("Status request");
+			command_net_status();
 		}
 		else if (strcmp(command, "NET_RESET") == 0)
 		{
