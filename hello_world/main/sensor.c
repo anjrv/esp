@@ -33,20 +33,6 @@ typedef struct DhtRead_s {
 void dht_setup();
 int dht_scan(DhtRead_t* out);
 
-
-void app_main(void)
-{
-	dht_setup();
-
-	DhtRead_t data = {};
-	while (1) {
-		vTaskDelay(2500 / portTICK_RATE_MS);
-		if (!dht_scan(&data)) {
-			printf("T: %.1f, RH: %.1f\n", ((float)data.temperature) * 0.1f, ((float)data.humidity) * 0.1f);
-		}
-	}
-}
-
 void dht_setup() {
 	gpio_config_t io_mix = {};
 
@@ -152,4 +138,17 @@ int dht_scan(DhtRead_t* out) {
 	out->humidity = humid;
 	out->temperature = temp;
 	return 0;
+}
+
+int app_main()
+{
+	dht_setup();
+
+	DhtRead_t data = {};
+	while (1) {
+		vTaskDelay(2500 / portTICK_RATE_MS);
+		if (!dht_scan(&data)) {
+			printf("T: %.1f, RH: %.1f\n", ((float)data.temperature) * 0.1f, ((float)data.humidity) * 0.1f);
+		}
+	}
 }
