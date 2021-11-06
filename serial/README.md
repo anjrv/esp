@@ -1,4 +1,51 @@
-# Assignment 3 Information
+# Assignment 4 Information
+
+Nearly all of the functionality added for this project is within the files `wifi.c` and `wifi.h` the only other additions are simply adding these "routes" to the `commands` and `serial` files to add them to the firmware command list.
+
+**Important note:**
+
+The node ID used by the device is set within the `espnow_init(void)` function based on a simple if statement.
+This will only set it correctly on my two devices but will likely need to be adjusted when testing on other devices.
+
+```c
+int espnow_init(void) {
+
+    // ...
+
+    uint8_t curr_mac[6];
+    esp_efuse_mac_get_default(curr_mac);
+    own_id = curr_mac[0] == 0x30 ? 0x1e : 0x1d;
+
+    // ...
+}
+```
+
+
+## Changes and implementation
+
+Some basic cleanup was done such as adding static tags to certain variables to reduce their scope. The first changes made were turning off bluetooth initialization within `serial.c` and adding wifi initialization. After this a stripped down variant of the `factoring_contest` project was added as a template to start from.
+
+Building on the initial template the callback function was adjusted to do some basic validation on the packet using some chained XORs in an if statement. If a packet passes initial inspection it is sent through a switch statement based on the `control` byte ( this also acts as validation for the control byte, default case is fall through and do nothing. ) If there is a valid `control` byte the switch statement then calls a followup function which will react to the message received.
+
+For the purpose of properly reacting to `STATUS` and `LINK` packages some basic effort was required to know whether our current device was initiating or not. 
+
+* For `LINK` we check this by checking whether the incoming packet matched our previously sent `identifier` byte.
+* For `STATUS` we check whether we have any outstanding inactive nodes that we are waiting for responses from.
+
+Another implementation decision was the matter of timing responses. The simplest way seemed to simply keep a timestamp for when locate or status commands were received and check the diff between this timestamp if a `LINK` or `STATUS` packet came in.
+
+
+## General thoughts
+
+Since the scope of this assignment was somewhat more narrow and clear I took the opportunity to play around with some ... more C like solutions that I was generally unfamiliar with. Mostly memory commands such as `memcpy(wifi_links[i].mac_addr, mac, sizeof(uint8_t) * 6);`.
+
+
+## Testing challenges
+
+Since we only really have two devices the testing of locate and status commands more or less only covers some basic cases ( powering down a device before requesting status, setting a TaskDelay on status response etc... ) 
+
+
+# Assignment 3 Information ( Old )
 
 ## Changes and implementation
 
@@ -23,6 +70,7 @@ Really I mostly just copied the bt_client demo code and adjusted the worker and 
 * This is probably already known but some of the firmware descriptions were a bit vague:
     - From what I could tell sources have their keys tied to them - i.e. noise always has the keys a, b and c and these can never be changed ( at least in the current implementation. ) But some of the text makes it seem as if these can change?
     - Some examples seem contradictory, the data_stat example seems to return values as if it was an instant command but is clearly defined as a background command. For this specific conflict I went with the assumption that the example was "shorthand" for the predefined order of: initiate background task > receive id > check result with id later
+
 
 # Assignment 2 Information ( Old )
 
@@ -53,6 +101,7 @@ Really I mostly just copied the bt_client demo code and adjusted the worker and 
 * For the factoring function itself a generic special response was added for input numbers of 1 and 0  ( cannot be factored ) this is also used for undefined behavior when the value to be factored fails to be read properly.
 * Generally the newly implemented ps function will list processes from newest to oldest since it simply iterates from the head of the list and new entries are inserted at the head.
 * There is no real explicit limit to number of tasks, its not so much as a queue as it is just creating tasks named based on their ID tag. It remains to be really seen how this works out in the long run, currently integer factors don't exactly take very long so testing intended behaviour of a large number of background processes was a little strange.
+
 
 # Assignment 1 Information ( Old )
 

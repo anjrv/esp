@@ -685,6 +685,9 @@ void command_data_raw(int num_args, char **vars)
     }
 }
 
+/**
+ * Broadcasts LOCATE packets to nearby nodes
+ */ 
 void command_net_locate()
 {
     int peers = wifi_send_locate();
@@ -694,16 +697,25 @@ void command_net_locate()
     serial_out(buf);
 }
 
+/**
+ * Prints the current ESPNOW networking table of the device
+ */ 
 void command_net_table()
 {
     wifi_net_table();
 }
 
+/**
+ * Empties the ESPNOW networking table of the device
+ */ 
 void command_net_reset()
 {
     wifi_net_reset();
 }
 
+/**
+ * Sends STATUS packets to linked nodes
+ */ 
 void command_net_status() {
     wifi_send_status();
 }

@@ -17,7 +17,11 @@
 #include "serial.h"
 #include "tasks.h"
 
+// Current amount of connections
+// Will adjust all array sizes and relevant loops
 #define MAX_LINKS 4
+
+// Some basic packet definitions
 #define FRAME_SIZE 152
 #define VERSION 0x11
 #define BROADCAST 0xFF
@@ -40,19 +44,27 @@ static SemaphoreHandle_t link_timers_access;
 static esp_now_peer_info_t peerInfo;
 
 static uint8_t broadcast[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+// own_id is initialized by the espnow_init function
 static uint8_t own_id = 0xFF;
 static uint8_t identifier = 0xFF;
 
 static uint8_t status_responses[MAX_LINKS] = {0};
 static wifi_link wifi_links[MAX_LINKS] = {0};
 static time_t link_timers[MAX_LINKS];
-static time_t locate_timer;
-static time_t status_timer;
 
+// Some basic counters for net_locate and net_status
 static int inactive_nodes = 0;
 static int active_nodes = 0;
 static int added_peers = 0;
 
+// The timers for net_locate and net_status
+static time_t locate_timer;
+static time_t status_timer;
+
+/**
+ * Prints the current networking table to the standard output
+ */
 void wifi_net_table()
 {
     while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
@@ -88,6 +100,10 @@ void wifi_net_table()
     xSemaphoreGive(links_access);
 }
 
+/**
+ * Nulls out the current networking table
+ * ( mac_addr beyond the first indexes is junk data if first two are marked 0 )
+ */ 
 void wifi_net_reset()
 {
     while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
@@ -107,6 +123,11 @@ void wifi_net_reset()
     serial_out("node reset");
 }
 
+/**
+ * Function for user command locate
+ * 
+ * Broadcasts locate packets if the networking table has room
+ */ 
 int wifi_send_locate()
 {
     while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
@@ -155,6 +176,11 @@ int wifi_send_locate()
     return added_peers;
 }
 
+/**
+ * Function for user command status
+ * 
+ * Sends status packets to all nodes currently on the networking table
+ */ 
 int wifi_send_status()
 {
     inactive_nodes = 0;
@@ -186,6 +212,7 @@ int wifi_send_status()
         if (wifi_links[i].mac_addr[0] != 0)
         {
             inactive_nodes++;
+            // For some basic coherency this will use explicit destinations since we target only linked nodes
             wifi_msg[2] = wifi_links[i].node_id;
             wifi_msg[3] = wifi_msg[0] + wifi_msg[1] + wifi_msg[2] + wifi_msg[4];
             if (esp_now_send(broadcast, (uint8_t *)wifi_msg, FRAME_SIZE) != ESP_OK)
@@ -197,6 +224,7 @@ int wifi_send_status()
 
     xSemaphoreGive(links_access);
 
+    // Delay for responses
     vTaskDelay(LOCATE_DELAY / 5);
 
     while (xSemaphoreTake(status_access, WAIT_QUEUE) != pdTRUE)
@@ -209,6 +237,7 @@ int wifi_send_status()
         vTaskDelay(DELAY);
     }
 
+    // Check what status responses have been adjusted from 0
     for (i = 0; i < MAX_LINKS; i++)
     {
         uint8_t curr_node = wifi_links[i].node_id;
@@ -245,6 +274,12 @@ int wifi_send_status()
     return 0;
 }
 
+/**
+ * Link sending function used by the callback to respond to locates
+ * 
+ * @param node the node to send the packet to
+ * @param id the identifier byte to respond with
+ */ 
 int send_link(const uint8_t node, const uint8_t id)
 {
     while (xSemaphoreTake(links_access, WAIT_QUEUE) != pdTRUE)
@@ -274,7 +309,7 @@ int send_link(const uint8_t node, const uint8_t id)
 
             // Temp store
             wifi_links[i].node_id = node;
-            wifi_links[i].mac_addr[1] = id;
+            wifi_links[i].mac_addr[1] = id; // Don't necessarily have to check this but may be useful later
             time(&link_timers[i]);
 
             xSemaphoreGive(link_timers_access);
@@ -300,6 +335,14 @@ int send_link(const uint8_t node, const uint8_t id)
     return 0;
 }
 
+/**
+ * Link response function used by the callback
+ * Forks based on whether we sent out a locate broadcast or not
+ * 
+ * @param node the node sending us a link packet
+ * @param id the identifier byte of the packet
+ * @param mac the mac address of the sending node
+ */ 
 int process_link(const uint8_t node, const uint8_t id, const uint8_t *mac)
 {
     if (identifier == id)
@@ -395,6 +438,12 @@ int process_link(const uint8_t node, const uint8_t id, const uint8_t *mac)
     return -1;
 }
 
+/**
+ * Status response function used by the callback
+ * Forks based on whether we sent out a status request or not
+ * 
+ * @param node the node sending us a status packet
+ */ 
 int process_status(const uint8_t node)
 {
     int exists = 0;
@@ -428,6 +477,7 @@ int process_status(const uint8_t node)
     wifi_msg[4] = STATUS;
     wifi_msg[3] = wifi_msg[0] + wifi_msg[1] + wifi_msg[2] + wifi_msg[4];
 
+    // Wasn't our status check
     if (!inactive_nodes)
     {
         if (esp_now_send(broadcast, (uint8_t *)wifi_msg, FRAME_SIZE) != ESP_OK)
@@ -439,6 +489,7 @@ int process_status(const uint8_t node)
     }
     else
     {
+        // Was our status check, doublecheck if response is on time
         if (difftime(time(NULL), status_timer) > 1)
         {
             return -4;
@@ -455,6 +506,7 @@ int process_status(const uint8_t node)
                 vTaskDelay(DELAY);
             }
 
+            // Mark node responded
             for (i = 0; i < MAX_LINKS; i++)
             {
                 if (status_responses[i] == 0)
@@ -473,6 +525,9 @@ int process_status(const uint8_t node)
     return 0;
 }
 
+/**
+ * espnow callback
+ */ 
 void espnow_onreceive(const uint8_t *mac, const uint8_t *data, int len)
 {
     if (len != FRAME_SIZE)

@@ -3,8 +3,8 @@
 
 #define DEVELOPER_ID "s114"
 #define MAJOR 4 
-#define MINOR 1
-#define REVISION 0
+#define MINOR 3 
+#define REVISION 1
 
 /**
  * VERSION HISTORY
@@ -81,6 +81,10 @@
  * 4.1.0 - WiFi files added with placeholder functions and "globals"
  * 
  * 4.2.0 - net_locate, net_reset and net_table added
+ * 
+ * 4.3.0 - net_status added
+ * 
+ * 4.3.1 - documentation additions
  */
 
 #endif
