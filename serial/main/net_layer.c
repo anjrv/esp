@@ -65,11 +65,6 @@ int net_init(uint8_t node_id, int isDebugRoot)
  */
 void net_info()
 {
-    while (xSemaphoreTake(node.app_table.lock, WAIT_LOCK) != pdTRUE)
-    {
-        vTaskDelay(DELAY);
-    }
-
     char buf[40];
     int results = 0;
 
@@ -90,8 +85,6 @@ void net_info()
             serial_out(buf);
         }
     }
-
-    xSemaphoreGive(node.app_table.lock);
 
     if (!results)
     {
