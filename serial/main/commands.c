@@ -13,7 +13,7 @@
 #include "tasks.h"
 #include "client.h"
 #include "data_tasks.h"
-#include "wifi.h"
+#include "net_layer.h"
 
 #define MSG_BUFFER_LENGTH 256
 
@@ -39,8 +39,8 @@ static char version[6] = {0};
 
 /**
  * Used for setting the current error state
- * 
- * @param status    the status of the previous command 
+ *
+ * @param status    the status of the previous command
  * @param command   the name of the previous command
  */
 void set_error(char *status, char *command)
@@ -81,7 +81,7 @@ void command_ping()
 }
 
 /**
- * Prints the mac address of the device 
+ * Prints the mac address of the device
  * Leading zeroes are left in
  */
 void command_mac()
@@ -150,7 +150,7 @@ int validate(char *key, char *pattern)
 
 /**
  * Stores a signed 32-bit integer onto the device dictionary
- * 
+ *
  * @param num_args   number of delimiter split inputs
  * @param vars       the query variables provided to the device
  * @param dictionary the dictionary currently in use by the device,
@@ -208,7 +208,7 @@ void command_store(int num_args, char **vars, dict *dictionary)
 
 /**
  * Fetches a signed 32-bit integer from the device dictionary
- * 
+ *
  * @param num_args   number of delimiter split inputs
  * @param vars       the query variables provided to the device
  * @param dictionary the dictionary currently in use by the device,
@@ -245,7 +245,7 @@ void command_query(int num_args, char **vars, dict *dictionary)
 
 /**
  * If there is space, pushes a signed 32-bit integer on to the device stack
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  * @param stack_pointer the stack currently in use by the device,
@@ -284,10 +284,10 @@ void command_push(int num_args, char **vars, stack *stack_pointer)
 /**
  * If one valid defined value is given the function returns the outcome of
  * adding that value to the first value on the stack (non destructive)
- * 
+ *
  * If two valid defined values are given the function returns the outcome
  * of adding those t wo values together
- *  
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  * @param stack_pointer stack currently in use by the device,
@@ -368,7 +368,7 @@ void command_add(int num_args, char **vars, stack *stack_pointer, dict *dictiona
  * If there are values on the stack, pops the top of the stack
  * and returns the value. If there are no values left on the stack
  * the function returns "undefined"
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param stack_pointer the stack currently in use by the device,
  *                      this is initialized in the main function
@@ -399,8 +399,8 @@ void command_ps()
 }
 
 /**
- * Prints the result of a previous background task if a valid ID is given 
- * 
+ * Prints the result of a previous background task if a valid ID is given
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
@@ -425,7 +425,7 @@ void command_result(int num_args, char **vars)
 
 /**
  * Attempts to scan and connect to a bluetooth name + service
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
@@ -473,7 +473,7 @@ void command_bt_connect(int num_args, char **vars)
 }
 
 /**
- * Prints some information about the current bluetooth connection 
+ * Prints some information about the current bluetooth connection
  */
 void command_bt_status()
 {
@@ -515,7 +515,7 @@ void command_bt_close()
 
 /**
  * Attempts to add a dataset with the given name and source
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
@@ -555,7 +555,7 @@ void command_data_create(int num_args, char **vars)
 
 /**
  * Attempts to destroy a dataset ( and its entries ) with the given name
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
@@ -578,7 +578,7 @@ void command_data_destroy(int num_args, char **vars)
 
 /**
  * Attempts to print some information about a given dataset
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
@@ -621,8 +621,8 @@ void command_data_info(int num_args, char **vars)
 }
 
 /**
- * Prints the raw data rows of the requested dataset[.key] to serial output, or a problem report 
- * 
+ * Prints the raw data rows of the requested dataset[.key] to serial output, or a problem report
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  */
@@ -685,40 +685,42 @@ void command_data_raw(int num_args, char **vars)
     }
 }
 
-/**
- * Broadcasts LOCATE packets to nearby nodes
- */ 
-void command_net_locate()
-{
-    int peers = wifi_send_locate();
-
-    char buf[50];
-    snprintf(buf, sizeof(buf), "%s %d %s", "Linked", peers, "nodes");
-    serial_out(buf);
-}
+// WiFi commands are deprecated due to new network functionality
+//
+// /**
+//  * Broadcasts LOCATE packets to nearby nodes
+//  */
+// void command_net_locate()
+// {
+//     int peers = wifi_send_locate();
+//
+//     char buf[50];
+//     snprintf(buf, sizeof(buf), "%s %d %s", "Linked", peers, "nodes");
+//     serial_out(buf);
+// }
 
 /**
  * Prints the current ESPNOW networking table of the device
- */ 
+ */
 void command_net_table()
 {
-    wifi_net_table();
+    net_info();
 }
 
-/**
- * Empties the ESPNOW networking table of the device
- */ 
-void command_net_reset()
-{
-    wifi_net_reset();
-}
-
-/**
- * Sends STATUS packets to linked nodes
- */ 
-void command_net_status() {
-    wifi_send_status();
-}
+// /**
+//  * Empties the ESPNOW networking table of the device
+//  */
+// void command_net_reset()
+// {
+//     wifi_net_reset();
+// }
+//
+// /**
+//  * Sends STATUS packets to linked nodes
+//  */
+// void command_net_status() {
+//     wifi_send_status();
+// }
 
 /////////////////////////
 // BACKGROUND COMMANDS //
@@ -728,10 +730,10 @@ void command_net_status() {
  * Gets the prime factors of:
  * - A given integer value
  * - A given dictionary entry
- * - The number at the top of the stack. 
- * 
+ * - The number at the top of the stack.
+ *
  * Prints the id of the factoring process upon creation or a state report.
- * 
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  * @param counter       the current task number
@@ -782,10 +784,10 @@ void command_factor(int num_args, char **vars, int counter, stack *stack_pointer
 }
 
 /**
- * Attempts to create a worker to append data to a dataset. 
- * 
- * Prints the id of the worker process upon creation or a state report. 
- * 
+ * Attempts to create a worker to append data to a dataset.
+ *
+ * Prints the id of the worker process upon creation or a state report.
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  * @param counter       the current task number
@@ -833,10 +835,10 @@ void command_data_append(int num_args, char **vars, int counter)
 }
 
 /**
- * Attempts to create a worker to gather information about a dataset. 
- * 
- * Prints the id of the worker process upon creation or a state report. 
- * 
+ * Attempts to create a worker to gather information about a dataset.
+ *
+ * Prints the id of the worker process upon creation or a state report.
+ *
  * @param num_args      number of delimiter split inputs
  * @param vars          the query variables provided to the device
  * @param counter       the current task number

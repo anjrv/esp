@@ -21,7 +21,7 @@
 #include "client.h"
 #include "data_tasks.h"
 #include "noise.h"
-#include "wifi.h"
+#include "network.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -137,18 +137,18 @@ void respond()
 		{
 			command_factor(quant, command_split, counter++, stack_pointer, dictionary);
 		}
-		else if (strcmp(command, "BT_CONNECT") == 0)
-		{
-			command_bt_connect(quant, command_split);
-		}
-		else if (strcmp(command, "BT_STATUS") == 0)
-		{
-			command_bt_status();
-		}
-		else if (strcmp(command, "BT_CLOSE") == 0)
-		{
-			command_bt_close();
-		}
+		// else if (strcmp(command, "BT_CONNECT") == 0)
+		// {
+		// 	command_bt_connect(quant, command_split);
+		// }
+		// else if (strcmp(command, "BT_STATUS") == 0)
+		// {
+		// 	command_bt_status();
+		// }
+		// else if (strcmp(command, "BT_CLOSE") == 0)
+		// {
+		// 	command_bt_close();
+		// } // Suppress bluetooth commands, none of them work if device is using ESPNOW
 		else if (strcmp(command, "DATA_CREATE") == 0)
 		{
 			command_data_create(quant, command_split);
@@ -173,18 +173,18 @@ void respond()
 		{
 			command_data_stat(quant, command_split, counter++);
 		}
-		else if (strcmp(command, "NET_LOCATE") == 0)
-		{	
-			command_net_locate();
-		}
-		else if (strcmp(command, "NET_STATUS") == 0)
-		{
-			command_net_status();
-		}
-		else if (strcmp(command, "NET_RESET") == 0)
-		{
-			command_net_reset();
-		}
+		// else if (strcmp(command, "NET_LOCATE") == 0)
+		// {
+		// 	command_net_locate();
+		// }
+		// else if (strcmp(command, "NET_STATUS") == 0)
+		// {
+		// 	command_net_status();
+		// }
+		// else if (strcmp(command, "NET_RESET") == 0)
+		// {
+		// 	command_net_reset();
+		// } // Suppress old 2-node network functionality
 		else if (strcmp(command, "NET_TABLE") == 0)
 		{
 			command_net_table();
@@ -208,10 +208,10 @@ void respond()
 
 /**
  * Main loop function of the app
- * 
+ *
  * Reads user input and creates
  * response function as needed
- * 
+ *
  * @param pvParameter function call parameter not used
  */
 void main_task(void *pvParameter)
@@ -297,21 +297,52 @@ void main_task(void *pvParameter)
 	}
 }
 
+void restart(void *pvParameter)
+{
+	vTaskDelay((4 * 60 * 1000) / portTICK_RATE_MS);
+    esp_restart();
+}
+
 /**
  * Entry point function, creates the main loop
  */
 void app_main(void)
 {
+	uint8_t local_mac[6];
+	esp_read_mac(local_mac, ESP_MAC_WIFI_STA);
+	uint8_t id = 0;
+	int root = 0;
+
+	if (local_mac[1] == 0xAE)
+	{
+		// Black device:
+		id = 0x1E;
+		root = 0;
+	}
+	else if (local_mac[1] == 0x0A)
+	{
+		// Yellow device.
+		id = 0x1D;
+		root = 1;
+	}
+	else
+	{
+		ESP_LOGE("APP_MAIN", "Could not determine Node-id.");
+		while (1)
+		{
+			vTaskDelay(1000 / portTICK_RATE_MS);
+		}
+	}
+
 	dictionary = create_dict(DICT_CAPACITY);
 	stack_pointer = create_stack(STACK_CAPACITY);
 	// data_client_prepare(); BT setup, conflicts with WiFi
-	esp_log_level_set("wifi", ESP_LOG_NONE);
+	// esp_log_level_set("wifi", ESP_LOG_NONE);
 	ESP_ERROR_CHECK(nvs_flash_init());
-	wifi_init();
-	espnow_init();
 	initialize_bt_tasks();
 	initialize_tasks();
 	initialize_noise();
+	net_init(id, root);
 	counter = 0;
 
 	xTaskCreate(
@@ -321,5 +352,15 @@ void app_main(void)
 		NULL,		   // - optional data for task
 		MAIN_PRIORITY, // - priority of the main task
 		NULL		   // - handle to task (for control)
+	);
+
+	// Low prio background task that will restart the device
+	xTaskCreate(
+		&restart,	  // - function ptr
+		"restart",	  // - arbitrary name
+		2048,		  // - stack size [byte]
+		NULL,		  // - optional data for task
+		LOW_PRIORITY, // - priority of the main task
+		NULL		  // - handle to task (for control)
 	);
 }
