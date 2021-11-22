@@ -19,7 +19,7 @@
 #include "network.h"
 #include "net_layer.h"
 #include "serial.h"
-#include "tasks.h"
+#include "noise.h"
 
 static const char *TAG = "NetworkLayer";
 
@@ -58,9 +58,9 @@ int net_init(uint8_t node_id, int isDebugRoot)
 
 /**
  * Basic adaptation of net_table
- * 
+ *
  * Prints the current link_table to serial out
- * 
+ *
  * NOTE: If node is acting as debug root then index 0 will be nonsense
  */
 void net_info()
@@ -143,6 +143,8 @@ int net_send_up(const app_header_t *head, const uint8_t *data)
     assert(head != NULL);
     assert(data != NULL);
 
+    vTaskDelay(random_int(10) / portTICK_PERIOD_MS);
+
     if (node.isRoot)
     {
         ESP_LOGI(TAG, "Root node send_up(..) -- ignoring.");
@@ -182,6 +184,8 @@ int net_send_down(const app_header_t *head, const uint8_t *data)
 {
     assert(head != NULL);
     assert(data != NULL);
+
+    vTaskDelay(random_int(10) / portTICK_PERIOD_MS);
 
     if (head->len > NET_MAX_PAYLOAD)
     {

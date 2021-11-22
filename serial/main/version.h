@@ -2,9 +2,9 @@
 #define VERSION_H_
 
 #define DEVELOPER_ID "s114"
-#define MAJOR 4 
-#define MINOR 3 
-#define REVISION 1
+#define MAJOR 5 
+#define MINOR 2 
+#define REVISION 0
 
 /**
  * VERSION HISTORY
@@ -85,6 +85,14 @@
  * 4.3.0 - net_status added
  * 
  * 4.3.1 - documentation additions
+ * 
+ * 5.0.0 - Initial node code implemented into project ...
+ *         Most of the old WiFi code discarded due to conflicting definitions
+ * 
+ * 5.1.0 - Node code adjusted: New implementation of net_table and random 0-10 ms delay on sends
+ * 
+ * 5.2.0 - Collatz demo added as an available application
+ *         serial.c adjusted to initialize required dependencies
  */
 
 #endif

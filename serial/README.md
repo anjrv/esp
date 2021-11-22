@@ -1,4 +1,18 @@
-# Assignment 4 Information
+# Final Assignment Information
+
+## Changes and implementation
+
+Most of what was implemented simply adding code from the node demo and integrating it into the project. To make this a bit easier the old WiFi.c/h files have been removed. I felt like there was a lot of duplicate implementation e.g. the definition of links which made it easier to simply work with one implementation rather than a combination of both.
+
+Somewhat similar to before the node ID is set by using a simple if statement but this is now done through the net_init function provided by the node implementation.
+
+### Required additions
+
+I did make some simple changes to the net_layer files to provide an alternative implemention to net_table. Additionally I adjusted both of the net_layer send functions to ensure that there is a 0-10ms delay on all packets sent as was requested in the packet sending policy.
+
+Another addition was a simple low priority task that would force restart the device after a minimum of four minutes - this is not fully random but should be at a minimum four minutes with a possible added delay from reobtaining task priority.
+
+# Assignment 4 Information ( Old )
 
 Nearly all of the functionality added for this project is within the files `wifi.c` and `wifi.h` the only other additions are simply adding these "routes" to the `commands` and `serial` files to add them to the firmware command list.
 

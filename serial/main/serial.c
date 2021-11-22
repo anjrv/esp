@@ -22,6 +22,7 @@
 #include "data_tasks.h"
 #include "noise.h"
 #include "network.h"
+#include "collatz.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -327,6 +328,8 @@ void app_main(void)
 	}
 	else
 	{
+		// Should be the correct addresses for my devices
+		// Need to be adjusted otherwise
 		ESP_LOGE("APP_MAIN", "Could not determine Node-id.");
 		while (1)
 		{
@@ -344,6 +347,18 @@ void app_main(void)
 	initialize_noise();
 	net_init(id, root);
 	counter = 0;
+
+	/**
+	 * NOTE: 4 tasks initialized off the bat
+	 * 
+	 * Main serial communication task
+	 * Restart counter
+	 * Collatz communication task
+	 * Collatz computation task
+	 */
+
+	// Collatz app
+    collatz_init( root );
 
 	// Serial commands
 	xTaskCreate(
