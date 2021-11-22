@@ -1,7 +1,7 @@
 
 #include <stdint.h>
 
-#include <freertos/freeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>

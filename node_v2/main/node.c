@@ -1,33 +1,48 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <freertos/freeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include <esp_log.h>
 #include <esp_netif.h>
 
 #include "network.h"
+
+/*****************************************************************/
+/*  Define the apps we are going to support here                 */
+/*****************************************************************/
+
+#define COLLATZ
+#define noBOUNCE
+
+/*****************************************************************/
+
+#if defined(BOUNCE)
 #include "app_bounce.h"
+#endif
+
+#if defined(COLLATZ)
+#include "collatz.h"
+#endif
+
+/*****************************************************************/
 
 void app_main(void)
 {
     uint8_t local_mac[6];
     esp_read_mac(local_mac, ESP_MAC_WIFI_STA);
     uint8_t id = 0;
-    uint16_t bounce_freq = 0;
     int root = 0;
 
     if (local_mac[1] == 0x0A) {
         // Black device:
         id = 0x21;
-        bounce_freq = 600;
         root = 0;
     }
     else if (local_mac[1] == 0x62) {
         // Yellow device.
         id = 0x22;
-        bounce_freq = 2000;
         root = 1; 
     }
     else {
@@ -40,7 +55,16 @@ void app_main(void)
     }
 
     net_init(id, root);
+
+#if defined(COLLATZ)
+    collatz_init( root );
+#endif
+
+#if defined(BOUNCE)
+    uint16_t bounce_freq = root ? 2000 : 600;
     app_bounce_init(id, bounce_freq);
     vTaskDelay(60000 / portTICK_RATE_MS);
     app_bounce_add_message_up((id == 0x21 ? "BLACK" : "YELLOW"), 16);
+#endif
+
 }

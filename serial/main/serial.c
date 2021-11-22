@@ -345,6 +345,7 @@ void app_main(void)
 	net_init(id, root);
 	counter = 0;
 
+	// Serial commands
 	xTaskCreate(
 		&main_task,	   // - function ptr
 		"main_task",   // - arbitrary name
@@ -354,7 +355,7 @@ void app_main(void)
 		NULL		   // - handle to task (for control)
 	);
 
-	// Low prio background task that will restart the device
+	// Low prio background task that will restart the device ... eventually
 	xTaskCreate(
 		&restart,	  // - function ptr
 		"restart",	  // - arbitrary name
