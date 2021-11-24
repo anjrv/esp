@@ -48,7 +48,7 @@ static char remote_name[ESP_BT_GAP_MAX_BDNAME_LEN + 1];
 static uint32_t con_handle = 0xFFFFFFFF;
 
 // Forward declarations:
-BluetoothPacket init_packet();
+BluetoothPacket init_pak();
 int test_command(const char *message);
 int send(int flags, const char *message, TickType_t wait);
 
@@ -120,7 +120,7 @@ void bt_disconnect()
 }
 
 // Initializes a BluetoothPacket structure.
-BluetoothPacket init_packet()
+BluetoothPacket init_pak()
 {
     BluetoothPacket out;
     memset(&out, 0, sizeof(BluetoothPacket));
@@ -137,7 +137,7 @@ int send(int A_flags, const char *A_msg, TickType_t A_wait)
         return 1;
 
     // Construct the packet from arguments.
-    BluetoothPacket pak = init_packet();
+    BluetoothPacket pak = init_pak();
     pak.flags = A_flags;
     strncpy(pak.data, A_msg, 59);
 
@@ -196,7 +196,7 @@ void append_bt(void *pvParameter)
 
     while (source && !response_complete)
     {
-        BluetoothPacket in = init_packet();
+        BluetoothPacket in = init_pak();
         if (xQueueReceive(bt_recv, &in, WAIT_RESPONSE) != pdTRUE)
         {
             source = 0;

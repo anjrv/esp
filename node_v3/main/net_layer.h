@@ -1,3 +1,4 @@
+
 #include <stdint.h>
 
 #include <freertos/FreeRTOS.h>
@@ -161,5 +162,3 @@ void timer_cb_upstream(void* param);
 void timer_cb_downstream(void* param);
 void timer_cb_join(void* param);
 
-// Addition for net_table
-void net_info();

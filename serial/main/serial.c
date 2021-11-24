@@ -23,6 +23,8 @@
 #include "noise.h"
 #include "network.h"
 #include "collatz.h"
+#include "dht.h"
+#include "app_sensor.h"
 
 const TickType_t read_delay = 50 / portTICK_PERIOD_MS;
 // Data structures and global variables to ease communication
@@ -358,7 +360,9 @@ void app_main(void)
 	 */
 
 	// Collatz app
-    collatz_init( root );
+    collatz_init(root);
+	// dht_init(18);
+	// app_sensor_init(id);
 
 	// Serial commands
 	xTaskCreate(

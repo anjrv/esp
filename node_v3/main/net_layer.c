@@ -18,9 +18,9 @@
 
 #include "network.h"
 #include "net_layer.h"
-#include "serial.h"
 
 static const char* TAG = "NetworkLayer";
+
 
 NodeState node;
 LinkEntry link_broadcast = {
@@ -52,42 +52,6 @@ int net_init(uint8_t node_id, int isDebugRoot) {
     }
 
     return 0;
-}
-
-/**
- * Basic adaptation of net_table
- *
- * Prints the current link_table to serial out
- *
- * NOTE: If node is acting as debug root then index 0 will be nonsense
- */
-void net_info()
-{
-    char buf[40];
-    int results = 0;
-
-    for (int i = 0; i < LINK_TABLE_SIZE; ++i)
-    {
-        if (node.link_table.usage & (1ul << i))
-        {
-            results++;
-            snprintf(buf, sizeof(buf), "%d %02X %02X:%02X:%02X:%02X:%02X:%02X",
-                     i,
-                     node.link_table.entry[i].id,
-                     node.link_table.entry[i].mac[0],
-                     node.link_table.entry[i].mac[1],
-                     node.link_table.entry[i].mac[2],
-                     node.link_table.entry[i].mac[3],
-                     node.link_table.entry[i].mac[4],
-                     node.link_table.entry[i].mac[5]);
-            serial_out(buf);
-        }
-    }
-
-    if (!results)
-    {
-        serial_out("empty table");
-    }
 }
 
 
